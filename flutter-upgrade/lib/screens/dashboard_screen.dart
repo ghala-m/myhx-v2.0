@@ -69,8 +69,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   Widget build(BuildContext context) {
     final pages = [
-      _buildDashboard(),
-      _buildAllPatients(),
+      SizedBox.expand(child: _buildDashboard()),
+      SizedBox.expand(child: _buildAllPatients()),
     ];
 
     return Scaffold(
