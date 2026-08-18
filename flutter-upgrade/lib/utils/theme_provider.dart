@@ -1,15 +1,24 @@
 import 'package:flutter/material.dart';
 
+/// Manages the app's theme mode (light / dark / system).
 class ThemeProvider with ChangeNotifier {
-  ThemeMode _themeMode = ThemeMode.system;
+  ThemeMode _themeMode;
 
-  ThemeProvider(ThemeMode dark); // الوضع الافتراضي هو اتباع النظام
+  ThemeProvider([ThemeMode initialMode = ThemeMode.system]) : _themeMode = initialMode;
 
   ThemeMode get themeMode => _themeMode;
 
-  // دالة لتغيير الثيم
+  bool get isDarkMode => _themeMode == ThemeMode.dark ||
+      (_themeMode == ThemeMode.system &&
+          WidgetsBinding.instance.platformDispatcher.platformBrightness == Brightness.dark);
+
   void setThemeMode(ThemeMode mode) {
+    if (_themeMode == mode) return;
     _themeMode = mode;
-    notifyListeners(); // هذا السطر يخبر كل أجزاء التطبيق أن الثيم قد تغير
+    notifyListeners();
+  }
+
+  void toggleTheme() {
+    setThemeMode(isDarkMode ? ThemeMode.light : ThemeMode.dark);
   }
 }
