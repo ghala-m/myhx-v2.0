@@ -1,0 +1,46 @@
+{
+  "project_info": {
+    "project_number": "532125817379",
+    "project_id": "myhx-app",
+    "storage_bucket": "myhx-app.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:532125817379:android:7ccf4d6c392584fc5d6f96",
+        "android_client_info": {
+          "package_name": "com.example.myhx_app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "532125817379-oh827eeoofrrbtcgqdkibj23rfmgj82q.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCQAKoGYwOjp6L7Db2DGFfieMAHlS8gsMw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "532125817379-oh827eeoofrrbtcgqdkibj23rfmgj82q.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "532125817379-dds2dlucs4hmhqqs7aps487ov4dg80ip.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.myhxApp"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

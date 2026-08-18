@@ -1,0 +1,55 @@
+{
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "myhx-app",
+          "appId": "1:532125817379:android:7ccf4d6c392584fc5d6f96",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "ios": {
+        "default": {
+          "projectId": "myhx-app",
+          "appId": "1:532125817379:ios:ef3cec407ec961945d6f96",
+          "uploadDebugSymbols": false,
+          "fileOutput": "ios/Runner/GoogleService-Info.plist"
+        }
+      },
+      "macos": {
+        "default": {
+          "projectId": "myhx-app",
+          "appId": "1:532125817379:ios:ef3cec407ec961945d6f96",
+          "uploadDebugSymbols": false,
+          "fileOutput": "macos/Runner/GoogleService-Info.plist"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "myhx-app",
+          "configurations": {
+            "android": "1:532125817379:android:7ccf4d6c392584fc5d6f96",
+            "ios": "1:532125817379:ios:ef3cec407ec961945d6f96",
+            "macos": "1:532125817379:ios:ef3cec407ec961945d6f96",
+            "web": "1:532125817379:web:3ddf46a0c3f05b965d6f96",
+            "windows": "1:532125817379:web:f72639c7fd4a0f025d6f96"
+          }
+        }
+      }
+    }
+  },
+  "hosting": {
+    "public": "build/web",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "rewrites": [
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ]
+  }
+}
