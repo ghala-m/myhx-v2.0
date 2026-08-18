@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../utils/colors.dart';
+import '../utils/app_colors.dart';
+import '../utils/app_spacing.dart';
+import '../utils/app_typography.dart';
+import '../widgets/app_button.dart';
+import '../widgets/app_text_field.dart';
+import '../services/auth_service.dart';
 import 'signup_screen.dart';
-import 'dashboard_screen.dart';
-import '../services/auth_service.dart'; // تأكد من استيراد AuthService
-import 'package:firebase_auth/firebase_auth.dart'; // لاستخدام FirebaseAuthException
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -28,279 +30,172 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _handleLogin() async {
-    if (_formKey.currentState!.validate()) {
-      setState(() {
-        _isLoading = true;
-      });
+    if (!_formKey.currentState!.validate()) return;
 
-      // تعريف authService هنا خارج try block ليكون متاحًا في catch block
-      final authService = Provider.of<AuthService>(context, listen: false);
+    setState(() => _isLoading = true);
 
-      try {
-        await authService.signInWithEmail(
-          _emailController.text,
-          _passwordController.text,
-        );
-        // لا حاجة للتنقل يدويًا، AuthWrapper سيتعامل مع ذلك
-      } on FirebaseAuthException catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(authService.getErrorMessage(e.code))),
-        );
-      } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('An unexpected error occurred.')),
-        );
-      } finally {
-        setState(() {
-          _isLoading = false;
-        });
+    final authService = Provider.of<AuthService>(context, listen: false);
+
+    try {
+      await authService.signInWithEmail(
+        _emailController.text.trim(),
+        _passwordController.text.trim(),
+      );
+    } on Exception catch (e) {
+      if (mounted) {
+        final message = e is FirebaseAuthException
+            ? authService.getErrorMessage(e.code)
+            : 'An unexpected error occurred. Please try again.';
+        _showError(message);
       }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  void _showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: theme.colorScheme.background,
       body: SafeArea(
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            return SingleChildScrollView(
-              child: ConstrainedBox(
-                constraints: BoxConstraints(minHeight: constraints.maxHeight),
-                child: IntrinsicHeight(
-                  child: Padding(
-                    padding: const EdgeInsets.all(24.0),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        // Logo and title
-                        Container(
-                          width: 80,
-                          height: 80,
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [
-                                AppColors.primaryCyan,
-                                AppColors.primaryTeal,
-                              ],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            ),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: const Icon(
-                            Icons.medical_services,
-                            color: Colors.white,
-                            size: 40,
-                          ),
-                        ),
-                        const SizedBox(height: 24),
-                        Text(
-                          'myhx-',
-                          style: TextStyle(
-                            fontSize: 32,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.primaryDark,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Smart Medical History Application',
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: AppColors.textSecondary,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: 48),
-
-                        // Login form
-                        Container(
-                          constraints: const BoxConstraints(maxWidth: 400),
-                          child: Form(
-                            key: _formKey,
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                // Email field
-                                TextFormField(
-                                  controller: _emailController,
-                                  keyboardType: TextInputType.emailAddress,
-                                  decoration: InputDecoration(
-                                    labelText: 'Email Address',
-                                    hintText: 'Enter your email',
-                                    prefixIcon: Icon(
-                                      Icons.email_outlined,
-                                      color: AppColors.primaryTeal,
-                                    ),
-                                    border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                      borderSide: BorderSide(color: AppColors.border),
-                                    ),
-                                    enabledBorder: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                      borderSide: BorderSide(color: AppColors.border),
-                                    ),
-                                    focusedBorder: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                      borderSide: BorderSide(color: AppColors.primaryTeal, width: 2),
-                                    ),
-                                    filled: true,
-                                    fillColor: AppColors.surface,
-                                  ),
-                                  validator: (value) {
-                                    if (value == null || value.isEmpty) {
-                                      return 'Please enter your email';
-                                    }
-                                    if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
-                                      return 'Please enter a valid email';
-                                    }
-                                    return null;
-                                  },
-                                ),
-                                const SizedBox(height: 16),
-
-                                // Password field
-                                TextFormField(
-                                  controller: _passwordController,
-                                  obscureText: !_isPasswordVisible,
-                                  decoration: InputDecoration(
-                                    labelText: 'Password',
-                                    hintText: 'Enter your password',
-                                    prefixIcon: Icon(
-                                      Icons.lock_outlined,
-                                      color: AppColors.primaryTeal,
-                                    ),
-                                    suffixIcon: IconButton(
-                                      icon: Icon(
-                                        _isPasswordVisible
-                                            ? Icons.visibility_off
-                                            : Icons.visibility,
-                                        color: AppColors.textSecondary,
-                                      ),
-                                      onPressed: () {
-                                        setState(() {
-                                          _isPasswordVisible = !_isPasswordVisible;
-                                        });
-                                      },
-                                    ),
-                                    border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                      borderSide: BorderSide(color: AppColors.border),
-                                    ),
-                                    enabledBorder: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                      borderSide: BorderSide(color: AppColors.border),
-                                    ),
-                                    focusedBorder: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                      borderSide: BorderSide(color: AppColors.primaryTeal, width: 2),
-                                    ),
-                                    filled: true,
-                                    fillColor: AppColors.surface,
-                                  ),
-                                  validator: (value) {
-                                    if (value == null || value.isEmpty) {
-                                      return 'Please enter your password';
-                                    }
-                                    if (value.length < 6) {
-                                      return 'Password must be at least 6 characters';
-                                    }
-                                    return null;
-                                  },
-                                ),
-                                const SizedBox(height: 24),
-
-                                // Login button
-                                ElevatedButton(
-                                  onPressed: _isLoading ? null : _handleLogin,
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: AppColors.primaryTeal,
-                                    foregroundColor: Colors.white,
-                                    padding: const EdgeInsets.symmetric(vertical: 16),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    elevation: 0,
-                                  ),
-                                  child: _isLoading
-                                      ? const SizedBox(
-                                          height: 20,
-                                          width: 20,
-                                          child: CircularProgressIndicator(
-                                            strokeWidth: 2,
-                                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                                          ),
-                                        )
-                                      : const Text(
-                                          'Sign In',
-                                          style: TextStyle(
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.w600,
-                                          ),
-                                        ),
-                                ),
-                                const SizedBox(height: 16),
-
-                                // Forgot password
-                                TextButton(
-                                  onPressed: () {
-                                    // TODO: Implement forgot password
-                                  },
-                                  child: Text(
-                                    'Forgot Password?',
-                                    style: TextStyle(
-                                      color: AppColors.primaryTeal,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(height: 32),
-
-                                // Sign up link
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Text(
-                                      "Don't have an account? ",
-                                      style: TextStyle(
-                                        color: AppColors.textSecondary,
-                                      ),
-                                    ),
-                                    TextButton(
-                                      onPressed: () {
-                                        Navigator.of(context).push(
-                                          MaterialPageRoute(
-                                            builder: (context) => const SignupScreen(),
-                                          ),
-                                        );
-                                      },
-                                      child: Text(
-                                        'Sign Up',
-                                        style: TextStyle(
-                                          color: AppColors.primaryTeal,
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(AppSpacing.lg),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 420),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  _buildLogo(),
+                  const SizedBox(height: AppSpacing.xl),
+                  Text(
+                    'Welcome back',
+                    style: AppTypography.displayLarge(context),
+                    textAlign: TextAlign.center,
                   ),
-                ),
+                  const SizedBox(height: AppSpacing.sm),
+                  Text(
+                    'Sign in to continue taking smarter medical histories.',
+                    style: AppTypography.bodyLarge(context),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: AppSpacing.xxl),
+                  _buildForm(theme),
+                  const SizedBox(height: AppSpacing.lg),
+                  _buildFooter(),
+                ],
               ),
-            );
-          },
+            ),
+          ),
         ),
       ),
     );
   }
+
+  Widget _buildLogo() {
+    return Container(
+      width: 88,
+      height: 88,
+      decoration: BoxDecoration(
+        gradient: AppColors.heroGradient,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withValues(alpha: 0.35),
+            blurRadius: 24,
+            offset: const Offset(0, 12),
+          ),
+        ],
+      ),
+      child: const Icon(
+        Icons.medical_services_rounded,
+        color: Colors.white,
+        size: 40,
+      ),
+    );
+  }
+
+  Widget _buildForm(ThemeData theme) {
+    return Form(
+      key: _formKey,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          AppTextField(
+            controller: _emailController,
+            label: 'Email Address',
+            hint: 'doctor@hospital.com',
+            prefixIcon: Icons.email_outlined,
+            keyboardType: TextInputType.emailAddress,
+            validator: (value) {
+              if (value == null || value.isEmpty) return 'Please enter your email';
+              if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+                return 'Please enter a valid email';
+              }
+              return null;
+            },
+          ),
+          const SizedBox(height: AppSpacing.md),
+          AppTextField(
+            controller: _passwordController,
+            label: 'Password',
+            hint: 'Enter your password',
+            prefixIcon: Icons.lock_outlined,
+            suffixIcon: _isPasswordVisible ? Icons.visibility_off : Icons.visibility,
+            onSuffixTap: () => setState(() => _isPasswordVisible = !_isPasswordVisible),
+            obscureText: !_isPasswordVisible,
+            validator: (value) {
+              if (value == null || value.isEmpty) return 'Please enter your password';
+              if (value.length < 6) return 'Password must be at least 6 characters';
+              return null;
+            },
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton(
+              onPressed: () {
+                // TODO: Implement forgot password flow
+              },
+              child: const Text('Forgot Password?'),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          AppButton(
+            label: 'Sign In',
+            isLoading: _isLoading,
+            onPressed: _handleLogin,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFooter() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Text(
+          "Don't have an account? ",
+          style: AppTypography.bodyMedium(context),
+        ),
+        TextButton(
+          onPressed: () => Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const SignupScreen()),
+          ),
+          child: const Text('Sign Up'),
+        ),
+      ],
+    );
+  }
 }
 
-
+// Minimal alias to avoid importing firebase_auth just for the exception type.
+typedef FirebaseAuthException = Exception;
