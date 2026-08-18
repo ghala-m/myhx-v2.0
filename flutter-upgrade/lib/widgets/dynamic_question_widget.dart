@@ -1,9 +1,10 @@
-// Fixed Dynamic Question Widget
-// lib/widgets/dynamic_question_widget.dart or lib/screens/dynamic_question_widget.dart
-
 import 'package:flutter/material.dart';
 import '../models/question_model.dart';
+import '../utils/app_colors.dart';
+import '../utils/app_spacing.dart';
+import '../utils/app_typography.dart';
 
+/// Renders a single dynamic medical-history question.
 class DynamicQuestionWidget extends StatefulWidget {
   final EnhancedQuestion question;
   final dynamic answer;
@@ -13,7 +14,7 @@ class DynamicQuestionWidget extends StatefulWidget {
     super.key,
     required this.question,
     this.answer,
-    required this.onAnswerChanged, required currentAnswer,
+    required this.onAnswerChanged,
   });
 
   @override
@@ -28,9 +29,7 @@ class _DynamicQuestionWidgetState extends State<DynamicQuestionWidget> {
   void initState() {
     super.initState();
     _currentAnswer = widget.answer;
-    _textController = TextEditingController(
-      text: widget.answer?.toString() ?? '',
-    );
+    _textController = TextEditingController(text: widget.answer?.toString() ?? '');
   }
 
   @override
@@ -43,39 +42,37 @@ class _DynamicQuestionWidgetState extends State<DynamicQuestionWidget> {
   }
 
   void _updateAnswer(dynamic answer) {
-    setState(() {
-      _currentAnswer = answer;
-    });
+    setState(() => _currentAnswer = answer);
     widget.onAnswerChanged(answer);
   }
 
   Color _getPriorityColor() {
     switch (widget.question.priority) {
       case QuestionPriority.critical:
-        return Colors.red;
+        return AppColors.error;
       case QuestionPriority.important:
-        return Colors.orange;
+        return AppColors.warning;
       case QuestionPriority.detailed:
-        return Colors.blue;
+        return AppColors.info;
       case QuestionPriority.optional:
-        return Colors.grey;
+        return AppColors.onSurfaceVariant;
       default:
-        return Colors.grey;
+        return AppColors.onSurfaceVariant;
     }
   }
 
   IconData _getPriorityIcon() {
     switch (widget.question.priority) {
       case QuestionPriority.critical:
-        return Icons.priority_high;
+        return Icons.priority_high_rounded;
       case QuestionPriority.important:
-        return Icons.info;
+        return Icons.info_outline_rounded;
       case QuestionPriority.detailed:
-        return Icons.list;
+        return Icons.list_rounded;
       case QuestionPriority.optional:
-        return Icons.help_outline;
+        return Icons.help_outline_rounded;
       default:
-        return Icons.help_outline;
+        return Icons.help_outline_rounded;
     }
   }
 
@@ -96,147 +93,132 @@ class _DynamicQuestionWidgetState extends State<DynamicQuestionWidget> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final priorityColor = _getPriorityColor();
+
     return Container(
-      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.only(bottom: AppSpacing.md),
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+        border: Border.all(color: theme.colorScheme.outlineVariant),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Question title with priority indicator
           Row(
             children: [
-              // Priority indicator
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                 decoration: BoxDecoration(
-                  color: _getPriorityColor().withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: _getPriorityColor(), width: 1),
+                  color: priorityColor.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(20),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(
-                      _getPriorityIcon(),
-                      size: 14,
-                      color: _getPriorityColor(),
-                    ),
-                    const SizedBox(width: 4),
+                    Icon(_getPriorityIcon(), size: 14, color: priorityColor),
+                    const SizedBox(width: 6),
                     Text(
                       _getPriorityLabel(),
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: _getPriorityColor(),
-                        fontWeight: FontWeight.bold,
+                      style: AppTypography.caption(context).copyWith(
+                        color: priorityColor,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(width: 8),
-              
-              // Required indicator
-              if (widget.question.required)
+              if (widget.question.required) ...[
+                const SizedBox(width: 8),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
-                    color: Colors.red.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(8),
+                    color: AppColors.errorContainer,
+                    borderRadius: BorderRadius.circular(20),
                   ),
-                  child: const Text(
+                  child: Text(
                     'Required',
-                    style: TextStyle(
-                      fontSize: 10,
-                      color: Colors.red,
-                      fontWeight: FontWeight.bold,
+                    style: AppTypography.caption(context).copyWith(
+                      color: AppColors.error,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                 ),
+              ],
             ],
           ),
-          
-          const SizedBox(height: 12),
-          
-          // Question text
+          const SizedBox(height: AppSpacing.md),
           Text(
             widget.question.question,
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-            ),
+            style: AppTypography.titleMedium(context),
           ),
-          
-          // Help text
-          if (widget.question.helpText != null)
-            Padding(
-              padding: const EdgeInsets.only(top: 4),
-              child: Text(
-                widget.question.helpText!,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey[600],
-                  fontStyle: FontStyle.italic,
-                ),
+          if (widget.question.helpText != null) ...[
+            const SizedBox(height: 4),
+            Text(
+              widget.question.helpText!,
+              style: AppTypography.bodyMedium(context).copyWith(
+                fontStyle: FontStyle.italic,
               ),
             ),
-          
-          const SizedBox(height: 16),
-          
-          // Input element based on question type
-          _buildInputWidget(),
+          ],
+          const SizedBox(height: AppSpacing.md),
+          _buildInputWidget(theme),
         ],
       ),
     );
   }
 
-  Widget _buildInputWidget() {
+  Widget _buildInputWidget(ThemeData theme) {
     switch (widget.question.type.toLowerCase()) {
       case 'radio':
-        return _buildRadioWidget();
+        return _buildRadioWidget(theme);
       case 'checkbox':
-        return _buildCheckboxWidget();
+        return _buildCheckboxWidget(theme);
       case 'text':
-        return _buildTextWidget();
+        return _buildTextWidget(theme);
       case 'number':
-        return _buildNumberWidget();
+        return _buildNumberWidget(theme);
       case 'date':
-        return _buildDateWidget();
+        return _buildDateWidget(theme);
       case 'time':
-        return _buildTimeWidget();
+        return _buildTimeWidget(theme);
       case 'textarea':
-        return _buildTextAreaWidget();
+        return _buildTextAreaWidget(theme);
       case 'select':
-        return _buildSelectWidget();
+        return _buildSelectWidget(theme);
       case 'range':
-        return _buildRangeWidget();
+        return _buildRangeWidget(theme);
       case 'boolean':
-        return _buildBooleanWidget();
+        return _buildBooleanWidget(theme);
       default:
-        return _buildTextWidget();
+        return _buildTextWidget(theme);
     }
   }
 
-  Widget _buildRadioWidget() {
+  Widget _buildRadioWidget(ThemeData theme) {
     if (widget.question.options == null || widget.question.options!.isEmpty) {
-      return const Text('No options available');
+      return _buildNoOptions(theme);
     }
-
     return Column(
       children: widget.question.options!.map((option) {
         return RadioListTile<String>(
-          title: Text(option),
+          title: Text(option, style: AppTypography.bodyLarge(context)),
           value: option,
           groupValue: _currentAnswer?.toString(),
           onChanged: (value) => _updateAnswer(value),
           dense: true,
           contentPadding: EdgeInsets.zero,
+          activeColor: theme.colorScheme.primary,
         );
       }).toList(),
     );
   }
 
-  Widget _buildCheckboxWidget() {
+  Widget _buildCheckboxWidget(ThemeData theme) {
     if (widget.question.options == null || widget.question.options!.isEmpty) {
-      return const Text('No options available');
+      return _buildNoOptions(theme);
     }
 
     List<String> selectedOptions = [];
@@ -248,17 +230,14 @@ class _DynamicQuestionWidgetState extends State<DynamicQuestionWidget> {
 
     return Column(
       children: widget.question.options!.map((option) {
-        bool isSelected = selectedOptions.contains(option);
-        
+        final isSelected = selectedOptions.contains(option);
         return CheckboxListTile(
-          title: Text(option),
+          title: Text(option, style: AppTypography.bodyLarge(context)),
           value: isSelected,
           onChanged: (bool? value) {
-            List<String> newSelection = List<String>.from(selectedOptions);
+            final newSelection = List<String>.from(selectedOptions);
             if (value == true) {
-              if (!newSelection.contains(option)) {
-                newSelection.add(option);
-              }
+              if (!newSelection.contains(option)) newSelection.add(option);
             } else {
               newSelection.remove(option);
             }
@@ -266,53 +245,49 @@ class _DynamicQuestionWidgetState extends State<DynamicQuestionWidget> {
           },
           dense: true,
           contentPadding: EdgeInsets.zero,
+          activeColor: theme.colorScheme.primary,
         );
       }).toList(),
     );
   }
 
-  Widget _buildTextWidget() {
+  Widget _buildTextWidget(ThemeData theme) {
     return TextFormField(
       controller: _textController,
       decoration: InputDecoration(
         hintText: widget.question.placeholder ?? 'Enter answer...',
-        border: const OutlineInputBorder(),
-        isDense: true,
       ),
       onChanged: _updateAnswer,
     );
   }
 
-  Widget _buildNumberWidget() {
+  Widget _buildNumberWidget(ThemeData theme) {
     return TextFormField(
       controller: _textController,
       keyboardType: TextInputType.number,
       decoration: InputDecoration(
         hintText: widget.question.placeholder ?? 'Enter number...',
-        border: const OutlineInputBorder(),
-        isDense: true,
       ),
       onChanged: (value) {
-        double? numValue = double.tryParse(value);
+        final numValue = double.tryParse(value);
         _updateAnswer(numValue ?? value);
       },
     );
   }
 
-  Widget _buildDateWidget() {
+  Widget _buildDateWidget(ThemeData theme) {
     return InkWell(
       onTap: () async {
-        DateTime? selectedDate = await showDatePicker(
+        final selectedDate = await showDatePicker(
           context: context,
           initialDate: DateTime.now(),
           firstDate: DateTime(1900),
           lastDate: DateTime.now(),
         );
-        
         if (selectedDate != null) {
-          String formattedDate = "${selectedDate.day}/${selectedDate.month}/${selectedDate.year}";
-          _textController.text = formattedDate;
-          _updateAnswer(formattedDate);
+          final formatted = '${selectedDate.day}/${selectedDate.month}/${selectedDate.year}';
+          _textController.text = formatted;
+          _updateAnswer(formatted);
         }
       },
       child: IgnorePointer(
@@ -320,27 +295,24 @@ class _DynamicQuestionWidgetState extends State<DynamicQuestionWidget> {
           controller: _textController,
           decoration: const InputDecoration(
             hintText: 'Select date...',
-            border: OutlineInputBorder(),
-            isDense: true,
-            suffixIcon: Icon(Icons.calendar_today),
+            suffixIcon: Icon(Icons.calendar_today_rounded),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildTimeWidget() {
+  Widget _buildTimeWidget(ThemeData theme) {
     return InkWell(
       onTap: () async {
-        TimeOfDay? selectedTime = await showTimePicker(
+        final selectedTime = await showTimePicker(
           context: context,
           initialTime: TimeOfDay.now(),
         );
-        
         if (selectedTime != null) {
-          String formattedTime = "${selectedTime.hour}:${selectedTime.minute.toString().padLeft(2, '0')}";
-          _textController.text = formattedTime;
-          _updateAnswer(formattedTime);
+          final formatted = '${selectedTime.hour}:${selectedTime.minute.toString().padLeft(2, '0')}';
+          _textController.text = formatted;
+          _updateAnswer(formatted);
         }
       },
       child: IgnorePointer(
@@ -348,39 +320,30 @@ class _DynamicQuestionWidgetState extends State<DynamicQuestionWidget> {
           controller: _textController,
           decoration: const InputDecoration(
             hintText: 'Select time...',
-            border: OutlineInputBorder(),
-            isDense: true,
-            suffixIcon: Icon(Icons.access_time),
+            suffixIcon: Icon(Icons.access_time_rounded),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildTextAreaWidget() {
+  Widget _buildTextAreaWidget(ThemeData theme) {
     return TextFormField(
       controller: _textController,
       maxLines: 4,
       decoration: InputDecoration(
         hintText: widget.question.placeholder ?? 'Enter details...',
-        border: const OutlineInputBorder(),
-        isDense: true,
       ),
       onChanged: _updateAnswer,
     );
   }
 
-  Widget _buildSelectWidget() {
+  Widget _buildSelectWidget(ThemeData theme) {
     if (widget.question.options == null || widget.question.options!.isEmpty) {
-      return const Text('No options available');
+      return _buildNoOptions(theme);
     }
-
     return DropdownButtonFormField<String>(
       value: _currentAnswer?.toString(),
-      decoration: const InputDecoration(
-        border: OutlineInputBorder(),
-        isDense: true,
-      ),
       hint: const Text('Select from list...'),
       items: widget.question.options!.map((option) {
         return DropdownMenuItem<String>(
@@ -392,7 +355,7 @@ class _DynamicQuestionWidgetState extends State<DynamicQuestionWidget> {
     );
   }
 
-  Widget _buildRangeWidget() {
+  Widget _buildRangeWidget(ThemeData theme) {
     double currentValue = 0.0;
     if (_currentAnswer is num) {
       currentValue = _currentAnswer.toDouble();
@@ -404,7 +367,7 @@ class _DynamicQuestionWidgetState extends State<DynamicQuestionWidget> {
       children: [
         Text(
           'Value: ${currentValue.toInt()}',
-          style: const TextStyle(fontWeight: FontWeight.bold),
+          style: AppTypography.titleMedium(context),
         ),
         Slider(
           value: currentValue,
@@ -412,45 +375,55 @@ class _DynamicQuestionWidgetState extends State<DynamicQuestionWidget> {
           max: 10,
           divisions: 10,
           label: currentValue.toInt().toString(),
-          onChanged: (value) {
-            _updateAnswer(value.toInt());
-          },
+          onChanged: (value) => _updateAnswer(value.toInt()),
+          activeColor: theme.colorScheme.primary,
         ),
       ],
     );
   }
 
-  Widget _buildBooleanWidget() {
+  Widget _buildBooleanWidget(ThemeData theme) {
     bool currentValue = false;
     if (_currentAnswer is bool) {
       currentValue = _currentAnswer;
     } else if (_currentAnswer is String) {
-      currentValue = _currentAnswer.toLowerCase() == 'true' || 
-                    _currentAnswer == 'نعم' || 
-                    _currentAnswer == '1';
+      currentValue = _currentAnswer.toLowerCase() == 'true' ||
+          _currentAnswer == 'نعم' ||
+          _currentAnswer == '1';
     }
 
     return Row(
       children: [
         Expanded(
           child: RadioListTile<bool>(
-            title: const Text('Yes'),
+            title: Text('Yes', style: AppTypography.bodyLarge(context)),
             value: true,
             groupValue: currentValue,
             onChanged: (value) => _updateAnswer(value),
             dense: true,
+            activeColor: theme.colorScheme.primary,
           ),
         ),
         Expanded(
           child: RadioListTile<bool>(
-            title: const Text('No'),
+            title: Text('No', style: AppTypography.bodyLarge(context)),
             value: false,
             groupValue: currentValue,
             onChanged: (value) => _updateAnswer(value),
             dense: true,
+            activeColor: theme.colorScheme.primary,
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildNoOptions(ThemeData theme) {
+    return Text(
+      'No options available',
+      style: AppTypography.bodyMedium(context).copyWith(
+        color: theme.colorScheme.error,
+      ),
     );
   }
 
@@ -460,4 +433,3 @@ class _DynamicQuestionWidgetState extends State<DynamicQuestionWidget> {
     super.dispose();
   }
 }
-
