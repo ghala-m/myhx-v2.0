@@ -74,7 +74,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     ];
 
     return Scaffold(
-      backgroundColor: Theme.of(context).colorScheme.background,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       body: SafeArea(
         child: FutureBuilder<List<Patient>>(
           future: _patientsFuture,
@@ -102,7 +102,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: theme.colorScheme.shadow.withValues(alpha: 0.08),
+            color: theme.colorScheme.onSurface.withValues(alpha: 0.08),
             blurRadius: 24,
             offset: const Offset(0, 8),
           ),

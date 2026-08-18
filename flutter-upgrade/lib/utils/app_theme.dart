@@ -30,8 +30,6 @@ class AppTheme {
             error: AppColors.error,
             onError: AppColors.onPrimary,
             errorContainer: AppColors.errorContainer,
-            background: AppColors.darkBackground,
-            onBackground: AppColors.darkOnSurface,
           )
         : const ColorScheme.light(
             primary: AppColors.primary,
@@ -49,15 +47,13 @@ class AppTheme {
             error: AppColors.error,
             onError: AppColors.onPrimary,
             errorContainer: AppColors.errorContainer,
-            background: AppColors.background,
-            onBackground: AppColors.onSurface,
           );
 
     return ThemeData(
       useMaterial3: true,
       brightness: brightness,
       colorScheme: colorScheme,
-      scaffoldBackgroundColor: colorScheme.background,
+      scaffoldBackgroundColor: colorScheme.surface,
       fontFamily: GoogleFonts.inter().fontFamily,
       appBarTheme: AppBarTheme(
         centerTitle: false,
