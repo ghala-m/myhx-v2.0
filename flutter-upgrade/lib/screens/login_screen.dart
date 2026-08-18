@@ -198,6 +198,3 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 }
-
-// Minimal alias to avoid importing firebase_auth just for the exception type.
-typedef FirebaseAuthException = Exception;
