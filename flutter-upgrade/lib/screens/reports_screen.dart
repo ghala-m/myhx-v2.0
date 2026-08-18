@@ -40,7 +40,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.construction, size: 60, color: colors.primary.withOpacity(0.5)),
+            Icon(Icons.construction, size: 60, color: colors.primary.withValues(alpha: 0.5)),
             const SizedBox(height: 16),
             Text(
               'هذه الميزة ستطلق رسميًا في الإصدار القادم.',

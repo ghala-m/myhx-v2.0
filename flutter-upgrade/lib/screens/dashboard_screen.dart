@@ -77,7 +77,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     ];
 
     return Scaffold(
-      backgroundColor: Theme.of(context).colorScheme.background,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       body: SafeArea(
         child: FutureBuilder<List<Patient>>(
           future: _patientsFuture,
@@ -127,8 +127,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
           decoration: BoxDecoration(
             color: Theme.of(context).colorScheme.surface,
             borderRadius: BorderRadius.circular(16),
-            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 12, offset: const Offset(0, 4))],
-            border: Border.all(color: Theme.of(context).colorScheme.outline.withOpacity(0.1), width: 1),
+            boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.08), blurRadius: 12, offset: const Offset(0, 4))],
+            border: Border.all(color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.1), width: 1),
           ),
           child: Row(
             children: [
@@ -150,7 +150,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     _searchController.clear();
                     _runFilter('');
                   },
-                  icon: Icon(Icons.clear, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5)),
+                  icon: Icon(Icons.clear, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5)),
                 ),
             ],
           ),
@@ -214,7 +214,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 2))],
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 2))],
       ),
       child: InkWell(
         onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (context) => PatientRecordScreen(patient: patient, reportId: ''))), // تم تمرير reportId فارغ مؤقتاً
@@ -224,7 +224,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             children: [
               CircleAvatar(
                 radius: 24,
-                backgroundColor: theme.colorScheme.primary.withOpacity(0.1),
+                backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.1),
                 child: Text(patient.name.split(' ').map((n) => n[0]).take(2).join(), style: TextStyle(color: theme.colorScheme.primary, fontWeight: FontWeight.bold)),
               ),
               const SizedBox(width: 12),
@@ -234,13 +234,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   children: [
                     Text(patient.name, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: theme.colorScheme.onSurface)),
                     const SizedBox(height: 4),
-                    Text('${patient.age} years • ${patient.gender}', style: TextStyle(fontSize: 14, color: theme.colorScheme.onSurface.withOpacity(0.7))),
+                    Text('${patient.age} years • ${patient.gender}', style: TextStyle(fontSize: 14, color: theme.colorScheme.onSurface.withValues(alpha: 0.7))),
                   ],
                 ),
               ),
               Text(
                 _formatTime(patient.createdAt),
-                style: TextStyle(fontSize: 12, color: theme.colorScheme.onSurface.withOpacity(0.5)),
+                style: TextStyle(fontSize: 12, color: theme.colorScheme.onSurface.withValues(alpha: 0.5)),
               ),
             ],
           ),
@@ -258,7 +258,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Widget _buildNavItem({required IconData icon, required String label, required int index}) {
     final bool isSelected = _selectedIndex == index;
-    final color = isSelected ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.onSurface.withOpacity(0.6);
+    final color = isSelected ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6);
     return InkWell(
       onTap: () => setState(() { _selectedIndex = index; }),
       borderRadius: BorderRadius.circular(20),
@@ -286,7 +286,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         decoration: BoxDecoration(
           shape: BoxShape.circle,
           gradient: LinearGradient(colors: [Theme.of(context).colorScheme.secondary, Theme.of(context).colorScheme.primary], begin: Alignment.topLeft, end: Alignment.bottomRight),
-          boxShadow: [BoxShadow(color: Theme.of(context).colorScheme.primary.withOpacity(0.3), blurRadius: 10, offset: const Offset(0, 4))],
+          boxShadow: [BoxShadow(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3), blurRadius: 10, offset: const Offset(0, 4))],
         ),
         child: const Icon(Icons.add, color: Colors.white, size: 32),
       ),
@@ -319,9 +319,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Good Morning, Doctor', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: theme.colorScheme.onBackground)),
+              Text('Good Morning, Doctor', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: theme.colorScheme.onSurface)),
               const SizedBox(height: 4),
-              Text('Here is your daily summary.', style: TextStyle(fontSize: 16, color: theme.colorScheme.onBackground.withOpacity(0.7))),
+              Text('Here is your daily summary.', style: TextStyle(fontSize: 16, color: theme.colorScheme.onSurface.withValues(alpha: 0.7))),
             ],
           ),
         ),
@@ -359,8 +359,8 @@ Widget _buildStatCard(String title, String value, IconData icon, Color color) {
     decoration: BoxDecoration(
       color: theme.colorScheme.surface,
       borderRadius: BorderRadius.circular(16),
-      boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 12, offset: const Offset(0, 4))],
-      border: Border.all(color: color.withOpacity(0.1), width: 1),
+      boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.08), blurRadius: 12, offset: const Offset(0, 4))],
+      border: Border.all(color: color.withValues(alpha: 0.1), width: 1),
     ),
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -370,7 +370,7 @@ Widget _buildStatCard(String title, String value, IconData icon, Color color) {
           children: [
             Container(
               padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(color: color.withOpacity(0.15), borderRadius: BorderRadius.circular(10)),
+              decoration: BoxDecoration(color: color.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(10)),
               child: Icon(icon, color: color, size: 22),
             ),
             Text(value, style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: theme.colorScheme.onSurface)),
@@ -379,7 +379,7 @@ Widget _buildStatCard(String title, String value, IconData icon, Color color) {
         const Spacer(),
         Text(
           title, 
-          style: TextStyle(fontSize: 13, color: theme.colorScheme.onSurface.withOpacity(0.7), fontWeight: FontWeight.w500),
+          style: TextStyle(fontSize: 13, color: theme.colorScheme.onSurface.withValues(alpha: 0.7), fontWeight: FontWeight.w500),
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
         ),
@@ -397,7 +397,7 @@ Widget _buildStatCard(String title, String value, IconData icon, Color color) {
       children: [
         Row(
           children: [
-            Text('Recent Patients', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: theme.colorScheme.onBackground)),
+            Text('Recent Patients', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: theme.colorScheme.onSurface)),
             const Spacer(),
             TextButton(
               onPressed: () => setState(() { _selectedIndex = 1; }),
@@ -411,16 +411,16 @@ Widget _buildStatCard(String title, String value, IconData icon, Color color) {
             width: double.infinity,
             padding: const EdgeInsets.symmetric(vertical: 40.0),
             decoration: BoxDecoration(
-              color: theme.colorScheme.surface.withOpacity(0.5),
+              color: theme.colorScheme.surface.withValues(alpha: 0.5),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Column(
               children: [
-                Icon(Icons.inbox_outlined, size: 40, color: theme.colorScheme.onSurface.withOpacity(0.5)),
+                Icon(Icons.inbox_outlined, size: 40, color: theme.colorScheme.onSurface.withValues(alpha: 0.5)),
                 const SizedBox(height: 8),
                 Text(
                   'No recent patients to show.',
-                  style: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.7), fontSize: 16),
+                  style: TextStyle(color: theme.colorScheme.onSurface.withValues(alpha: 0.7), fontSize: 16),
                 ),
               ],
             ),
@@ -458,8 +458,8 @@ Widget _buildStatCard(String title, String value, IconData icon, Color color) {
         decoration: BoxDecoration(
           color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(12),
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 2))],
-          border: Border.all(color: color.withOpacity(0.2)),
+          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 2))],
+          border: Border.all(color: color.withValues(alpha: 0.2)),
         ),
         child: Column(
           children: [

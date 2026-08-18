@@ -86,7 +86,7 @@ class _AllReportsScreenState extends State<AllReportsScreen> {
               color: colors.surface,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
+                  color: Colors.black.withValues(alpha: 0.05),
                   blurRadius: 4,
                   offset: const Offset(0, 2),
                 ),
@@ -131,7 +131,7 @@ class _AllReportsScreenState extends State<AllReportsScreen> {
                         const SizedBox(height: 8),
                         Text(
                           'Please try again later',
-                          style: TextStyle(color: colors.onSurface.withOpacity(0.7)),
+                          style: TextStyle(color: colors.onSurface.withValues(alpha: 0.7)),
                         ),
                       ],
                     ),
@@ -153,7 +153,7 @@ class _AllReportsScreenState extends State<AllReportsScreen> {
                         Icon(
                           Icons.description_outlined,
                           size: 64,
-                          color: colors.onSurface.withOpacity(0.3),
+                          color: colors.onSurface.withValues(alpha: 0.3),
                         ),
                         const SizedBox(height: 16),
                         Text(
@@ -163,7 +163,7 @@ class _AllReportsScreenState extends State<AllReportsScreen> {
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
-                            color: colors.onSurface.withOpacity(0.7),
+                            color: colors.onSurface.withValues(alpha: 0.7),
                           ),
                         ),
                         const SizedBox(height: 8),
@@ -171,7 +171,7 @@ class _AllReportsScreenState extends State<AllReportsScreen> {
                           _searchController.text.isEmpty
                             ? 'Create your first patient report'
                             : 'Try a different search term',
-                          style: TextStyle(color: colors.onSurface.withOpacity(0.5)),
+                          style: TextStyle(color: colors.onSurface.withValues(alpha: 0.5)),
                         ),
                       ],
                     ),
@@ -214,7 +214,7 @@ class _AllReportsScreenState extends State<AllReportsScreen> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -239,7 +239,7 @@ class _AllReportsScreenState extends State<AllReportsScreen> {
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: colors.primary.withOpacity(0.1),
+                      color: colors.primary.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Icon(
@@ -266,7 +266,7 @@ class _AllReportsScreenState extends State<AllReportsScreen> {
                           '${patient.age} years • ${patient.gender}',
                           style: TextStyle(
                             fontSize: 14,
-                            color: colors.onSurface.withOpacity(0.7),
+                            color: colors.onSurface.withValues(alpha: 0.7),
                           ),
                         ),
                       ],
@@ -332,7 +332,7 @@ class _AllReportsScreenState extends State<AllReportsScreen> {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
-                      color: colors.secondary.withOpacity(0.1),
+                      color: colors.secondary.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
@@ -349,7 +349,7 @@ class _AllReportsScreenState extends State<AllReportsScreen> {
                     _formatDateTime(createdAt),
                     style: TextStyle(
                       fontSize: 12,
-                      color: colors.onSurface.withOpacity(0.5),
+                      color: colors.onSurface.withValues(alpha: 0.5),
                     ),
                   ),
                 ],
@@ -361,10 +361,10 @@ class _AllReportsScreenState extends State<AllReportsScreen> {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: colors.primary.withOpacity(0.05),
+                    color: colors.primary.withValues(alpha: 0.05),
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(
-                      color: colors.primary.withOpacity(0.2),
+                      color: colors.primary.withValues(alpha: 0.2),
                     ),
                   ),
                   child: Row(

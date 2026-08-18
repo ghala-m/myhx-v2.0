@@ -208,7 +208,7 @@ class _PatientRecordScreenState extends State<PatientRecordScreen> {
                       padding: const EdgeInsets.all(16.0),
                       child: Column(
                         children: [
-                          Icon(Icons.assignment_late_outlined, size: 60, color: colors.onSurface.withOpacity(0.5)),
+                          Icon(Icons.assignment_late_outlined, size: 60, color: colors.onSurface.withValues(alpha: 0.5)),
                           const SizedBox(height: 16),
                           Text('No medical history for this patient', style: theme.textTheme.titleMedium),
                           const SizedBox(height: 8),
@@ -235,7 +235,7 @@ class _PatientRecordScreenState extends State<PatientRecordScreen> {
                       padding: const EdgeInsets.all(16.0),
                       child: Column(
                         children: [
-                          Icon(Icons.info_outline, size: 60, color: colors.primary.withOpacity(0.5)),
+                          Icon(Icons.info_outline, size: 60, color: colors.primary.withValues(alpha: 0.5)),
                           const SizedBox(height: 16),
                           Text('Medical Report is Empty', style: theme.textTheme.titleMedium),
                           const SizedBox(height: 8),

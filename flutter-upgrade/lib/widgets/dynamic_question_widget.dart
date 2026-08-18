@@ -108,7 +108,7 @@ class _DynamicQuestionWidgetState extends State<DynamicQuestionWidget> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: _getPriorityColor().withOpacity(0.1),
+                  color: _getPriorityColor().withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(color: _getPriorityColor(), width: 1),
                 ),
@@ -139,7 +139,7 @@ class _DynamicQuestionWidgetState extends State<DynamicQuestionWidget> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(
-                    color: Colors.red.withOpacity(0.1),
+                    color: Colors.red.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: const Text(

@@ -99,7 +99,7 @@ class _AnalysisResultScreenState extends State<AnalysisResultScreen> {
                   const SizedBox(height: 4),
                   Text(
                     '${widget.patient.age} years • ${widget.patient.gender}',
-                    style: theme.textTheme.bodyMedium?.copyWith(color: colors.onSurface.withOpacity(0.7)),
+                    style: theme.textTheme.bodyMedium?.copyWith(color: colors.onSurface.withValues(alpha: 0.7)),
                   ),
                 ],
               ),

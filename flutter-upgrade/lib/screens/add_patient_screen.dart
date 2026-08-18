@@ -128,7 +128,7 @@ class _AddPatientScreenState extends State<AddPatientScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Scaffold(
-      backgroundColor: theme.colorScheme.background,
+      backgroundColor: theme.colorScheme.surface,
       appBar: AppBar(
         title: const Text('Add New Patient'),
         elevation: 0,
@@ -237,7 +237,7 @@ class _AddPatientScreenState extends State<AddPatientScreen> {
                             }
                           },
                           backgroundColor: theme.colorScheme.surface,
-                          selectedColor: theme.colorScheme.primary.withOpacity(
+                          selectedColor: theme.colorScheme.primary.withValues(alpha: 
                             0.2,
                           ),
                           checkmarkColor: theme.colorScheme.primary,
@@ -252,7 +252,7 @@ class _AddPatientScreenState extends State<AddPatientScreen> {
                           side: BorderSide(
                             color: isSelected
                                 ? theme.colorScheme.primary
-                                : theme.colorScheme.outline.withOpacity(0.3),
+                                : theme.colorScheme.outline.withValues(alpha: 0.3),
                             width: isSelected ? 2 : 1,
                           ),
                         );
@@ -286,7 +286,7 @@ class _AddPatientScreenState extends State<AddPatientScreen> {
                       backgroundColor: theme.colorScheme.primary,
                       foregroundColor: Colors.white,
                       elevation: 2,
-                      shadowColor: theme.colorScheme.primary.withOpacity(0.3),
+                      shadowColor: theme.colorScheme.primary.withValues(alpha: 0.3),
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -316,13 +316,13 @@ class _AddPatientScreenState extends State<AddPatientScreen> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
         ],
         border: Border.all(
-          color: theme.colorScheme.outline.withOpacity(0.1),
+          color: theme.colorScheme.outline.withValues(alpha: 0.1),
           width: 1,
         ),
       ),
@@ -334,7 +334,7 @@ class _AddPatientScreenState extends State<AddPatientScreen> {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: theme.colorScheme.primary.withOpacity(0.1),
+                  color: theme.colorScheme.primary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Icon(icon, color: theme.colorScheme.primary, size: 20),
@@ -376,13 +376,13 @@ class _AddPatientScreenState extends State<AddPatientScreen> {
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(
-            color: theme.colorScheme.outline.withOpacity(0.3),
+            color: theme.colorScheme.outline.withValues(alpha: 0.3),
           ),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(
-            color: theme.colorScheme.outline.withOpacity(0.3),
+            color: theme.colorScheme.outline.withValues(alpha: 0.3),
           ),
         ),
         focusedBorder: OutlineInputBorder(
@@ -417,7 +417,7 @@ class _AddPatientScreenState extends State<AddPatientScreen> {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          border: Border.all(color: theme.colorScheme.outline.withOpacity(0.3)),
+          border: Border.all(color: theme.colorScheme.outline.withValues(alpha: 0.3)),
           borderRadius: BorderRadius.circular(12),
           color: theme.colorScheme.surface,
         ),
@@ -437,7 +437,7 @@ class _AddPatientScreenState extends State<AddPatientScreen> {
                     'Date of Birth',
                     style: TextStyle(
                       fontSize: 12,
-                      color: theme.colorScheme.onSurface.withOpacity(0.7),
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
                     ),
                   ),
                   const SizedBox(height: 2),
@@ -449,7 +449,7 @@ class _AddPatientScreenState extends State<AddPatientScreen> {
                       fontSize: 16,
                       color: _selectedDate != null
                           ? theme.colorScheme.onSurface
-                          : theme.colorScheme.onSurface.withOpacity(0.5),
+                          : theme.colorScheme.onSurface.withValues(alpha: 0.5),
                     ),
                   ),
                 ],
@@ -464,7 +464,7 @@ class _AddPatientScreenState extends State<AddPatientScreen> {
   Widget _buildGenderDropdown(ThemeData theme) {
     return Container(
       decoration: BoxDecoration(
-        border: Border.all(color: theme.colorScheme.outline.withOpacity(0.3)),
+        border: Border.all(color: theme.colorScheme.outline.withValues(alpha: 0.3)),
         borderRadius: BorderRadius.circular(12),
         color: theme.colorScheme.surface,
       ),
@@ -477,7 +477,7 @@ class _AddPatientScreenState extends State<AddPatientScreen> {
             contentPadding: EdgeInsets.zero,
           ),
           isExpanded: true,
-          icon: Icon(Icons.arrow_drop_down, color: theme.colorScheme.onSurface.withOpacity(0.7)),
+          icon: Icon(Icons.arrow_drop_down, color: theme.colorScheme.onSurface.withValues(alpha: 0.7)),
           items: _genders.map((g) {
             return DropdownMenuItem(
               value: g,

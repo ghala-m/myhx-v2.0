@@ -69,7 +69,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final theme = Theme.of(context);
 
     return Scaffold(
-      backgroundColor: theme.colorScheme.background,
+      backgroundColor: theme.colorScheme.surface,
       appBar: AppBar(
         title: const Text('Settings'),
       ),
@@ -107,9 +107,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: theme.colorScheme.error.withOpacity(0.05),
+        color: theme.colorScheme.error.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: theme.colorScheme.error.withOpacity(0.2)),
+        border: Border.all(color: theme.colorScheme.error.withValues(alpha: 0.2)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -135,7 +135,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         style: TextStyle(
           fontSize: 18,
           fontWeight: FontWeight.bold,
-          color: theme.colorScheme.onBackground,
+          color: theme.colorScheme.onSurface,
         ),
       ),
     );
@@ -155,14 +155,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
         borderRadius: BorderRadius.circular(context.borderRadius(20)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.08), 
+            color: Colors.black.withValues(alpha: 0.08), 
             blurRadius: context.spacing(20), 
             offset: Offset(0, context.spacing(8)),
             spreadRadius: 2,
           ),
         ],
         border: Border.all(
-          color: colors.outline.withOpacity(0.1),
+          color: colors.outline.withValues(alpha: 0.1),
           width: 1,
         ),
       ),
@@ -177,7 +177,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
-                      color: colors.primary.withOpacity(0.2),
+                      color: colors.primary.withValues(alpha: 0.2),
                       blurRadius: context.spacing(15),
                       offset: Offset(0, context.spacing(5)),
                     ),
@@ -185,7 +185,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
                 child: CircleAvatar(
                   radius: context.isMobile ? 55 : (context.isTablet ? 65 : 75),
-                  backgroundColor: colors.primary.withOpacity(0.15),
+                  backgroundColor: colors.primary.withValues(alpha: 0.15),
                   child: Text(
                     _doctor?.name != null && _doctor!.name.isNotEmpty
                         ? _doctor!.name.split(' ').map((s) => s[0]).join().toUpperCase()
@@ -211,7 +211,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     border: Border.all(color: colors.surface, width: 3),
                     boxShadow: [
                       BoxShadow(
-                        color: colors.primary.withOpacity(0.3),
+                        color: colors.primary.withValues(alpha: 0.3),
                         blurRadius: context.spacing(8),
                         offset: Offset(0, context.spacing(2)),
                       ),
@@ -244,7 +244,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               vertical: context.spacing(6),
             ),
             decoration: BoxDecoration(
-              color: colors.primary.withOpacity(0.1),
+              color: colors.primary.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(context.borderRadius(20)),
             ),
             child: Text(
@@ -266,14 +266,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
               Icon(
                 Icons.email_outlined, 
                 size: context.iconSize(18), 
-                color: colors.onSurface.withOpacity(0.6),
+                color: colors.onSurface.withValues(alpha: 0.6),
               ),
               SizedBox(width: context.spacing(8)),
               Text(
                 _doctor?.email ?? 'dr.email@example.com', 
                 style: TextStyle(
                   fontSize: context.fontSize(16), 
-                  color: colors.onSurface.withOpacity(0.7),
+                  color: colors.onSurface.withValues(alpha: 0.7),
                 ),
               ),
             ],
@@ -295,7 +295,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 backgroundColor: colors.primary,
                 foregroundColor: Colors.white,
                 elevation: 2,
-                shadowColor: colors.primary.withOpacity(0.3),
+                shadowColor: colors.primary.withValues(alpha: 0.3),
                 padding: EdgeInsets.symmetric(
                   horizontal: context.spacing(32), 
                   vertical: context.spacing(16),
@@ -344,7 +344,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           icon: Icons.language_outlined,
           title: 'Language',
           subtitle: _selectedLanguage,
-          trailing: Icon(Icons.arrow_forward_ios, size: 16, color: colors.onSurface.withOpacity(0.5)),
+          trailing: Icon(Icons.arrow_forward_ios, size: 16, color: colors.onSurface.withValues(alpha: 0.5)),
           onTap: _showLanguageDialog,
         ),
       ],
@@ -427,7 +427,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 2))],
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 2))],
       ),
       child: Column(children: children),
     );
@@ -438,7 +438,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return ListTile(
       leading: Icon(icon, color: titleColor ?? colors.primary),
       title: Text(title, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, color: titleColor ?? colors.onSurface)),
-      subtitle: subtitle != null ? Text(subtitle, style: TextStyle(fontSize: 14, color: colors.onSurface.withOpacity(0.7))) : null,
+      subtitle: subtitle != null ? Text(subtitle, style: TextStyle(fontSize: 14, color: colors.onSurface.withValues(alpha: 0.7))) : null,
       trailing: trailing,
       onTap: onTap,
     );
@@ -485,7 +485,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: Text('Cancel', style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7))),
+              child: Text('Cancel', style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7))),
             ),
             TextButton(
               onPressed: () {
