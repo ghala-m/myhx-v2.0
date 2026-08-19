@@ -10,6 +10,9 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+
 
   # Core
   cupertino_icons: ^1.0.8
@@ -34,6 +37,11 @@ dependencies:
   firebase_core: ^4.1.1
   firebase_auth: ^6.0.2
   cloud_firestore: ^6.0.2
+
+  # Offline, voice, charts
+  connectivity_plus: ^6.1.0
+  speech_to_text: ^7.0.0
+  fl_chart: ^0.69.0
 
   # Logging
   logger: ^2.4.0
