@@ -53,12 +53,9 @@ class _VoiceInputButtonState extends State<VoiceInputButton>
     }
 
     setState(() => _listening = true);
-    await _voice.listen(
-      arabic: widget.arabic,
-      onResult: (text, isFinal) {
-        widget.onTranscript(text);
-        if (isFinal && mounted) setState(() => _listening = false);
-      },
+    await _voice.start(
+      localeCode: widget.arabic ? 'ar' : 'en',
+      onResult: widget.onTranscript,
     );
   }
 
