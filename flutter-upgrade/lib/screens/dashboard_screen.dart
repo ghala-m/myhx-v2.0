@@ -78,17 +78,25 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.surface,
       body: SafeArea(
-        child: FutureBuilder<List<Patient>>(
-          future: _patientsFuture,
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(child: CircularProgressIndicator());
-            }
-            if (snapshot.hasError) {
-              return Center(child: Text('Something went wrong: ${snapshot.error}'));
-            }
-            return IndexedStack(index: _selectedIndex, children: pages);
-          },
+        child: Column(
+          children: [
+            const OfflineBanner(),
+            Expanded(
+              child: FutureBuilder<List<Patient>>(
+                future: _patientsFuture,
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                  if (snapshot.hasError) {
+                    return Center(
+                        child: Text('Something went wrong: ${snapshot.error}'));
+                  }
+                  return IndexedStack(index: _selectedIndex, children: pages);
+                },
+              ),
+            ),
+          ],
         ),
       ),
       bottomNavigationBar: _buildBottomNav(),
