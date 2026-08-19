@@ -10,6 +10,8 @@ import 'patient_record_screen.dart';
 import 'add_patient_screen.dart';
 import 'settings_screen.dart';
 import 'reports_screen.dart';
+import 'analytics_screen.dart';
+import '../widgets/offline_banner.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -76,17 +78,25 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.surface,
       body: SafeArea(
-        child: FutureBuilder<List<Patient>>(
-          future: _patientsFuture,
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(child: CircularProgressIndicator());
-            }
-            if (snapshot.hasError) {
-              return Center(child: Text('Something went wrong: ${snapshot.error}'));
-            }
-            return IndexedStack(index: _selectedIndex, children: pages);
-          },
+        child: Column(
+          children: [
+            const OfflineBanner(),
+            Expanded(
+              child: FutureBuilder<List<Patient>>(
+                future: _patientsFuture,
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                  if (snapshot.hasError) {
+                    return Center(
+                        child: Text('Something went wrong: ${snapshot.error}'));
+                  }
+                  return IndexedStack(index: _selectedIndex, children: pages);
+                },
+              ),
+            ),
+          ],
         ),
       ),
       bottomNavigationBar: _buildBottomNav(),
@@ -210,6 +220,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ],
           ),
         ),
+        IconButton.filledTonal(
+          tooltip: 'Analytics',
+          onPressed: () => Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const AnalyticsScreen()),
+          ),
+          icon: const Icon(Icons.insights_rounded),
+          style: IconButton.styleFrom(
+            backgroundColor: theme.colorScheme.secondaryContainer,
+            foregroundColor: theme.colorScheme.onSecondaryContainer,
+          ),
+        ),
+        const SizedBox(width: AppSpacing.sm),
         InkWell(
           onTap: () => Navigator.of(context).push(
             MaterialPageRoute(builder: (_) => const SettingsScreen()),
