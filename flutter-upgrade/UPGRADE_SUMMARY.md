@@ -149,3 +149,20 @@ The Python backend in `lib/backend/` was not changed. If you update the mobile a
 ---
 
 *Generated for myhx app upgrade.*
+
+## Round 4 — clinical AI wired end to end
+
+- `screens/dynamic_medical_history_screen.dart` now runs `ClinicalAIService.analyze()`
+  (differential + red flags + risk + SOAP) instead of the old symptom stub, and stores
+  the full structured result on the report.
+- `screens/analysis_result_screen.dart` fully redesigned: risk banner with confidence,
+  red-flag cards with required actions, ranked differential with probability bars,
+  supporting-finding chips, recommended workup, recommendations, SOAP note with
+  copy-to-clipboard, and share/print/PDF export via `ShareService`.
+  Backwards compatible with old reports that stored plain string lists.
+- `services/pdf_service.dart` AI section extended: probability-aware differential,
+  red flags, recommended workup and the SOAP note.
+
+### Remaining
+- Redesign of Add Patient / Patient Record / Reports / Settings / Signup screens.
+- Apply `context.tr()` strings across every screen for full AR/EN coverage.
