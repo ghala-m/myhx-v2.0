@@ -435,14 +435,130 @@ class PdfService {
             ),
             pw.SizedBox(height: 4),
             ...((aiAnalysis['differential_diagnosis'] as List).map((diagnosis) {
+              String line;
+              if (diagnosis is Map) {
+                final pct = ((diagnosis['probability'] as num? ?? 0) * 100)
+                    .round()
+                    .clamp(0, 100);
+                final rationale = (diagnosis['rationale'] ?? '').toString();
+                line = '${diagnosis['diagnosis'] ?? ''} — $pct%'
+                    '${rationale.isEmpty ? '' : ' ($rationale)'}';
+              } else {
+                line = diagnosis.toString();
+              }
               return pw.Padding(
                 padding: const pw.EdgeInsets.only(left: 12, bottom: 2),
                 child: pw.Text(
-                  '• ${diagnosis.toString()}',
+                  '• $line',
                   style: pw.TextStyle(
                     font: multilingualFont,
                     fontSize: 11,
                     color: PdfColor.fromHex('#333333'),
+                  ),
+                ),
+              );
+            }).toList()),
+            pw.SizedBox(height: 8),
+          ],
+
+          // Red flags
+          if ((aiAnalysis['red_flags'] as List?)?.isNotEmpty == true) ...[
+            pw.Text(
+              'Red Flags:',
+              style: pw.TextStyle(
+                font: englishBoldFont,
+                fontSize: 14,
+                fontWeight: pw.FontWeight.bold,
+                color: PdfColor.fromHex('#C62828'),
+              ),
+            ),
+            pw.SizedBox(height: 4),
+            ...((aiAnalysis['red_flags'] as List).map((flag) {
+              final label =
+                  flag is Map ? (flag['label'] ?? '').toString() : flag.toString();
+              final action = flag is Map ? (flag['action'] ?? '').toString() : '';
+              return pw.Padding(
+                padding: const pw.EdgeInsets.only(left: 12, bottom: 2),
+                child: pw.Text(
+                  '! $label${action.isEmpty ? '' : ' → $action'}',
+                  style: pw.TextStyle(
+                    font: multilingualFont,
+                    fontSize: 11,
+                    color: PdfColor.fromHex('#C62828'),
+                  ),
+                ),
+              );
+            }).toList()),
+            pw.SizedBox(height: 8),
+          ],
+
+          // Recommended workup
+          if ((aiAnalysis['recommended_workup'] as List?)?.isNotEmpty == true) ...[
+            pw.Text(
+              'Recommended Workup:',
+              style: pw.TextStyle(
+                font: englishBoldFont,
+                fontSize: 14,
+                fontWeight: pw.FontWeight.bold,
+                color: PdfColor.fromHex('#0092A4'),
+              ),
+            ),
+            pw.SizedBox(height: 4),
+            ...((aiAnalysis['recommended_workup'] as List).map((item) {
+              return pw.Padding(
+                padding: const pw.EdgeInsets.only(left: 12, bottom: 2),
+                child: pw.Text(
+                  '• ${item.toString()}',
+                  style: pw.TextStyle(
+                    font: multilingualFont,
+                    fontSize: 11,
+                    color: PdfColor.fromHex('#333333'),
+                  ),
+                ),
+              );
+            }).toList()),
+            pw.SizedBox(height: 8),
+          ],
+
+          // SOAP note
+          if (aiAnalysis['soap_note'] is Map) ...[
+            pw.Text(
+              'SOAP Note:',
+              style: pw.TextStyle(
+                font: englishBoldFont,
+                fontSize: 14,
+                fontWeight: pw.FontWeight.bold,
+                color: PdfColor.fromHex('#0092A4'),
+              ),
+            ),
+            pw.SizedBox(height: 4),
+            ...(['subjective', 'objective', 'assessment', 'plan'].map((key) {
+              final value =
+                  ((aiAnalysis['soap_note'] as Map)[key] ?? '').toString();
+              if (value.isEmpty) return pw.SizedBox();
+              return pw.Padding(
+                padding: const pw.EdgeInsets.only(left: 12, bottom: 4),
+                child: pw.RichText(
+                  text: pw.TextSpan(
+                    children: [
+                      pw.TextSpan(
+                        text: '${key[0].toUpperCase()}: ',
+                        style: pw.TextStyle(
+                          font: englishBoldFont,
+                          fontSize: 11,
+                          fontWeight: pw.FontWeight.bold,
+                          color: PdfColor.fromHex('#0092A4'),
+                        ),
+                      ),
+                      pw.TextSpan(
+                        text: value,
+                        style: pw.TextStyle(
+                          font: multilingualFont,
+                          fontSize: 11,
+                          color: PdfColor.fromHex('#333333'),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               );
