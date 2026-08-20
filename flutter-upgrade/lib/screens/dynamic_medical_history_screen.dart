@@ -9,7 +9,7 @@ import '../models/patient.dart';
 import '../services/question_service.dart';
 import '../services/database_service.dart';
 import '../services/auth_service.dart';
-import '../services/ai_service.dart';
+import '../services/clinical_ai_service.dart';
 import '../widgets/dynamic_question_widget.dart';
 import 'patient_record_screen.dart';
 
@@ -31,7 +31,7 @@ class _DynamicMedicalHistoryScreenState extends State<DynamicMedicalHistoryScree
   final EnhancedQuestionService _questionService = EnhancedQuestionService();
   final DatabaseService _dbService = DatabaseService();
   final AuthService _authService = AuthService();
-  final AIService _aiService = AIService();
+  final ClinicalAIService _aiService = ClinicalAIService();
   final PageController _pageController = PageController();
   
   List<EnhancedQuestion> _allCurrentVisibleQuestions = []; // قائمة جميع الأسئلة المرئية حالياً بالترتيب
@@ -180,18 +180,6 @@ class _DynamicMedicalHistoryScreenState extends State<DynamicMedicalHistoryScree
       });
       print("Extracted ${symptoms.length} symptoms for AI analysis");
 
-      // تحليل الذكاء الاصطناعي
-      print("Calling AI service...");
-      final analysisResult = await _aiService.analyzeSymptoms(
-        symptoms.where((s) => s.isNotEmpty).toList(),
-        {
-          'age': (widget.patient['age'] ?? 0).toString(),
-          'gender': widget.patient['gender'] ?? 'Unknown',
-          'department': widget.department,
-        },
-      );
-      print("AI analysis completed");
-
       // إنشاء كائن المريض
       final patientObj = Patient(
         id: widget.patient['id'] as String,
@@ -205,6 +193,17 @@ class _DynamicMedicalHistoryScreenState extends State<DynamicMedicalHistoryScree
         roomNumber: widget.patient['roomNumber'] as String? ?? 'N/A',
         doctorId: user.uid,
       );
+
+      // التحليل السريري (تشخيص تفريقي + علامات خطر + ملاحظة SOAP)
+      debugPrint("Running clinical analysis...");
+      final clinicalAnalysis = await _aiService.analyze(
+        symptoms: symptoms.where((s) => s.isNotEmpty).toList(),
+        patient: patientObj,
+        answers: allAnswers,
+        chiefComplaint: symptoms.isNotEmpty ? symptoms.first : null,
+      );
+      final analysisResult = clinicalAnalysis.toJson();
+      debugPrint("Clinical analysis completed: ${clinicalAnalysis.riskLevel}");
 
       // حفظ التقرير في Firestore
       print("Creating report in Firestore...");
