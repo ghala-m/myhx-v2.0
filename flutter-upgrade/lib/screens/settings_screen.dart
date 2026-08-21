@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../utils/theme_provider.dart';
-import '../utils/responsive_helper.dart';
-import 'login_screen.dart';
-import '../services/auth_service.dart';
-import '../utils/colors.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import '../services/database_service.dart';
 import '../models/doctor.dart';
-
+import '../services/auth_service.dart';
+import '../services/database_service.dart';
+import '../utils/app_colors.dart';
+import '../utils/app_spacing.dart';
+import '../utils/app_typography.dart';
+import '../utils/locale_provider.dart';
+import '../utils/theme_provider.dart';
+import '../widgets/app_card.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -19,487 +19,312 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  bool _notificationsEnabled = true;
   final AuthService _authService = AuthService();
   final DatabaseService _databaseService = DatabaseService();
+
   Doctor? _doctorProfile;
   bool _isLoadingProfile = true;
-  String _selectedLanguage = 'English';
-  final List<String> _languages = ['English', 'Arabic', 'Spanish', 'French'];
-
-  void _showFeatureNotImplemented() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('This feature is not yet implemented.'),
-        duration: Duration(seconds: 2),
-      ),
-    );
-  }
+  bool _notificationsEnabled = true;
 
   @override
   void initState() {
     super.initState();
-    _fetchDoctorProfile();
+    _loadProfile();
   }
 
-  Future<void> _fetchDoctorProfile() async {
-    final user = _authService.currentUser;
-    if (user != null) {
-      final doctorData = await _databaseService.getDoctorProfile(user.uid);
-      if (doctorData != null) {
+  Future<void> _loadProfile() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      if (mounted) setState(() => _isLoadingProfile = false);
+      return;
+    }
+    try {
+      final data = await _databaseService.getDoctorProfile(user.uid);
+      if (mounted) {
         setState(() {
-          _doctorProfile = Doctor.fromJson(doctorData, user.uid);
-          _isLoadingProfile = false;
-        });
-      } else {
-        setState(() {
+          _doctorProfile = data != null ? Doctor.fromJson(data, user.uid) : null;
           _isLoadingProfile = false;
         });
       }
-    } else {
-      setState(() {
-        _isLoadingProfile = false;
-      });
+    } catch (_) {
+      if (mounted) setState(() => _isLoadingProfile = false);
+    }
+  }
+
+  Future<void> _confirmLogout() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Log out'),
+        content: const Text('Are you sure you want to log out of myhx?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Log out'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true) {
+      await _authService.signOut();
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final themeProvider = Provider.of<ThemeProvider>(context);
     final theme = Theme.of(context);
+    final themeProvider = context.watch<ThemeProvider>();
+    final localeProvider = context.watch<LocaleProvider>();
 
     return Scaffold(
-      backgroundColor: theme.colorScheme.surface,
+      backgroundColor: theme.colorScheme.surfaceContainerHighest,
       appBar: AppBar(
         title: const Text('Settings'),
+        backgroundColor: theme.colorScheme.surfaceContainerHighest,
       ),
-      body: ResponsiveHelper.responsiveContainer(
-        context,
-        centerContent: false,
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-                            _isLoadingProfile
-                  ? const Center(child: CircularProgressIndicator())
-                  : Center(child: _buildProfileSection(theme, _doctorProfile)),
-              SizedBox(height: context.spacing(24)),
-              _buildSectionHeader('App Settings', theme),
-              _buildAppSettings(themeProvider),
-              SizedBox(height: context.spacing(24)),
-              _buildSectionHeader('About & Legal', theme),
-              _buildAboutSection(),
-              SizedBox(height: context.spacing(24)),
-              _buildSectionHeader('Account', theme),
-              _buildAccountSettings(),
-              SizedBox(height: context.spacing(24)),
-              _buildDisclaimer(theme),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  // --- كل دوال بناء الواجهة تم نقلها إلى هنا (داخل الكلاس) ---
-
-  Widget _buildDisclaimer(ThemeData theme) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.error.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: theme.colorScheme.error.withValues(alpha: 0.2)),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(Icons.warning_amber_rounded, color: theme.colorScheme.error, size: 20),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              'Disclaimer: This AI analysis is for informational purposes only and is not a substitute for professional medical advice. Always seek the advice of a qualified health provider.',
-              style: TextStyle(color: theme.colorScheme.error, fontSize: 12),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-  
-  Widget _buildSectionHeader(String title, ThemeData theme) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12.0, left: 4.0),
-      child: Text(
-        title,
-        style: TextStyle(
-          fontSize: 18,
-          fontWeight: FontWeight.bold,
-          color: theme.colorScheme.onSurface,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildProfileSection(ThemeData theme, dynamic _doctor) {
-    final colors = theme.colorScheme;
-    return Container(
-      width: double.infinity,
-      constraints: BoxConstraints(
-        maxWidth: context.isMobile ? double.infinity : 500,
-      ),
-      margin: EdgeInsets.symmetric(horizontal: context.spacing(16)),
-      padding: EdgeInsets.all(context.spacing(32)),
-      decoration: BoxDecoration(
-        color: colors.surface,
-        borderRadius: BorderRadius.circular(context.borderRadius(20)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.08), 
-            blurRadius: context.spacing(20), 
-            offset: Offset(0, context.spacing(8)),
-            spreadRadius: 2,
-          ),
-        ],
-        border: Border.all(
-          color: colors.outline.withValues(alpha: 0.1),
-          width: 1,
-        ),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Stack(
-            alignment: Alignment.center,
-            children: [
-              Container(
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: colors.primary.withValues(alpha: 0.2),
-                      blurRadius: context.spacing(15),
-                      offset: Offset(0, context.spacing(5)),
-                    ),
-                  ],
-                ),
-                child: CircleAvatar(
-                  radius: context.isMobile ? 55 : (context.isTablet ? 65 : 75),
-                  backgroundColor: colors.primary.withValues(alpha: 0.15),
-                  child: Text(
-                    _doctor?.name != null && _doctor!.name.isNotEmpty
-                        ? _doctor!.name.split(' ').map((s) => s[0]).join().toUpperCase()
-                        : 'DR',
-                    style: TextStyle(
-                      fontSize: context.fontSize(40), 
-                      fontWeight: FontWeight.bold, 
-                      color: colors.primary,
-                      letterSpacing: 1,
+      body: SafeArea(
+        child: ListView(
+          padding: const EdgeInsets.all(AppSpacing.md),
+          children: [
+            _profileCard(theme),
+            const SizedBox(height: AppSpacing.md),
+            _sectionLabel('Appearance'),
+            AppCard(
+              padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+              child: Column(
+                children: [
+                  _tile(
+                    icon: Icons.dark_mode_outlined,
+                    title: 'Dark mode',
+                    subtitle: 'Easier on the eyes during night shifts',
+                    trailing: Switch(
+                      value: themeProvider.isDarkMode,
+                      onChanged: (_) => themeProvider.toggleTheme(),
                     ),
                   ),
-                ),
+                  _divider(),
+                  _tile(
+                    icon: Icons.settings_suggest_outlined,
+                    title: 'Follow system theme',
+                    subtitle: 'Match your device appearance',
+                    trailing: Switch(
+                      value: themeProvider.themeMode == ThemeMode.system,
+                      onChanged: (v) => themeProvider.setThemeMode(
+                          v ? ThemeMode.system : ThemeMode.light),
+                    ),
+                  ),
+                ],
               ),
-              Positioned(
-                bottom: 4,
-                right: 4,
-                child: Container(
-                  width: context.iconSize(36),
-                  height: context.iconSize(36),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            _sectionLabel('Language'),
+            AppCard(
+              padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+              child: Column(
+                children: [
+                  _languageTile('English', 'en', localeProvider),
+                  _divider(),
+                  _languageTile('العربية', 'ar', localeProvider),
+                ],
+              ),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            _sectionLabel('Preferences'),
+            AppCard(
+              padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+              child: Column(
+                children: [
+                  _tile(
+                    icon: Icons.notifications_outlined,
+                    title: 'Notifications',
+                    subtitle: 'Reminders for pending histories',
+                    trailing: Switch(
+                      value: _notificationsEnabled,
+                      onChanged: (v) => setState(() => _notificationsEnabled = v),
+                    ),
+                  ),
+                  _divider(),
+                  _tile(
+                    icon: Icons.privacy_tip_outlined,
+                    title: 'Privacy & data',
+                    subtitle: 'Patient data stays encrypted in your account',
+                    trailing: const Icon(Icons.chevron_right_rounded),
+                  ),
+                  _divider(),
+                  _tile(
+                    icon: Icons.info_outline_rounded,
+                    title: 'About myhx',
+                    subtitle: 'Version 1.1.0',
+                    trailing: const Icon(Icons.chevron_right_rounded),
+                    onTap: () => showAboutDialog(
+                      context: context,
+                      applicationName: 'myhx',
+                      applicationVersion: '1.1.0',
+                      applicationLegalese:
+                          'Smart medical history taking with clinical AI support.',
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: AppSpacing.lg),
+            OutlinedButton.icon(
+              onPressed: _confirmLogout,
+              icon: const Icon(Icons.logout_rounded),
+              label: const Text('Log out'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.error,
+                side: const BorderSide(color: AppColors.error),
+              ),
+            ),
+            const SizedBox(height: AppSpacing.xl),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _profileCard(ThemeData theme) {
+    final name = _doctorProfile?.name.isNotEmpty == true
+        ? _doctorProfile!.name
+        : (FirebaseAuth.instance.currentUser?.displayName ?? 'Doctor');
+    final email = _doctorProfile?.email.isNotEmpty == true
+        ? _doctorProfile!.email
+        : (FirebaseAuth.instance.currentUser?.email ?? '');
+    final initials = name.trim().isEmpty
+        ? 'D'
+        : name.trim().split(' ').take(2).map((w) => w[0].toUpperCase()).join();
+
+    return AppCard(
+      child: _isLoadingProfile
+          ? const Center(
+              child: Padding(
+                padding: EdgeInsets.all(AppSpacing.md),
+                child: CircularProgressIndicator(strokeWidth: 2.5),
+              ),
+            )
+          : Row(
+              children: [
+                Container(
+                  width: 60,
+                  height: 60,
+                  alignment: Alignment.center,
                   decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: colors.primary,
-                    border: Border.all(color: colors.surface, width: 3),
-                    boxShadow: [
-                      BoxShadow(
-                        color: colors.primary.withValues(alpha: 0.3),
-                        blurRadius: context.spacing(8),
-                        offset: Offset(0, context.spacing(2)),
-                      ),
+                    gradient: AppColors.heroGradient,
+                    borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+                  ),
+                  child: Text(
+                    initials,
+                    style: AppTypography.titleLarge(context)
+                        .copyWith(color: Colors.white),
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.md),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(name, style: AppTypography.titleMedium(context)),
+                      const SizedBox(height: 2),
+                      Text(email, style: AppTypography.bodyMedium(context)),
+                      if (_doctorProfile != null &&
+                          _doctorProfile!.specialty.isNotEmpty) ...[
+                        const SizedBox(height: AppSpacing.sm),
+                        Wrap(
+                          spacing: AppSpacing.sm,
+                          children: [
+                            _pill(_doctorProfile!.specialty, theme),
+                            if (_doctorProfile!.year.isNotEmpty)
+                              _pill(_doctorProfile!.year, theme),
+                          ],
+                        ),
+                      ],
                     ],
                   ),
-                  child: Icon(
-                    Icons.edit, 
-                    color: Colors.white, 
-                    size: context.iconSize(20),
-                  ),
                 ),
-              )
-            ],
-          ),
-          SizedBox(height: context.spacing(24)),
-          Text(
-            _doctor?.name ?? 'Dr. Name', 
-            style: TextStyle(
-              fontSize: context.fontSize(26), 
-              fontWeight: FontWeight.bold, 
-              color: colors.onSurface,
-              letterSpacing: 0.5,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          SizedBox(height: context.spacing(8)),
-          Container(
-            padding: EdgeInsets.symmetric(
-              horizontal: context.spacing(16), 
-              vertical: context.spacing(6),
-            ),
-            decoration: BoxDecoration(
-              color: colors.primary.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(context.borderRadius(20)),
-            ),
-            child: Text(
-              _doctor?.specialty != null && _doctor?.year != null
-                  ? '${_doctor!.specialty} • ${_doctor!.year}'
-                  : 'Specialty • Year', 
-              style: TextStyle(
-                fontSize: context.fontSize(16), 
-                color: colors.primary,
-                fontWeight: FontWeight.w600,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ),
-          SizedBox(height: context.spacing(12)),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.email_outlined, 
-                size: context.iconSize(18), 
-                color: colors.onSurface.withValues(alpha: 0.6),
-              ),
-              SizedBox(width: context.spacing(8)),
-              Text(
-                _doctor?.email ?? 'dr.email@example.com', 
-                style: TextStyle(
-                  fontSize: context.fontSize(16), 
-                  color: colors.onSurface.withValues(alpha: 0.7),
-                ),
-              ),
-            ],
-          ),
-          SizedBox(height: context.spacing(28)),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              onPressed: _showFeatureNotImplemented,
-              icon: Icon(Icons.edit_outlined, size: context.iconSize(20)),
-              label: Text(
-                'Edit Profile',
-                style: TextStyle(
-                  fontSize: context.fontSize(16),
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: colors.primary,
-                foregroundColor: Colors.white,
-                elevation: 2,
-                shadowColor: colors.primary.withValues(alpha: 0.3),
-                padding: EdgeInsets.symmetric(
-                  horizontal: context.spacing(32), 
-                  vertical: context.spacing(16),
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(context.borderRadius(16)),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildAppSettings(ThemeProvider themeProvider) {
-    final colors = Theme.of(context).colorScheme;
-    return _buildSettingsCard(
-      children: [
-        _buildSettingsTile(
-          icon: Icons.notifications_outlined,
-          title: 'Notifications',
-          subtitle: 'Receive push notifications',
-          trailing: Switch(
-            value: _notificationsEnabled,
-            onChanged: (value) => setState(() { _notificationsEnabled = value; }),
-            activeColor: colors.primary,
-          ),
-        ),
-        _buildDivider(),
-        _buildSettingsTile(
-          icon: Icons.dark_mode_outlined,
-          title: 'Dark Mode',
-          subtitle: themeProvider.themeMode == ThemeMode.dark ? 'Enabled' : 'Disabled',
-          trailing: Switch(
-            value: themeProvider.themeMode == ThemeMode.dark,
-            onChanged: (value) {
-              final newMode = value ? ThemeMode.dark : ThemeMode.light;
-              themeProvider.setThemeMode(newMode);
-            },
-            activeColor: colors.primary,
-          ),
-        ),
-        _buildDivider(),
-        _buildSettingsTile(
-          icon: Icons.language_outlined,
-          title: 'Language',
-          subtitle: _selectedLanguage,
-          trailing: Icon(Icons.arrow_forward_ios, size: 16, color: colors.onSurface.withValues(alpha: 0.5)),
-          onTap: _showLanguageDialog,
-        ),
-      ],
-    );
-  }
-
-  Widget _buildAccountSettings() {
-    return _buildSettingsCard(
-      children: [
-        _buildSettingsTile(
-          icon: Icons.lock_outlined,
-          title: 'Change Password',
-          subtitle: 'Update your password',
-          trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-          onTap: _showFeatureNotImplemented,
-        ),
-        _buildDivider(),
-        _buildSettingsTile(
-          icon: Icons.backup_outlined,
-          title: 'Data Backup',
-          subtitle: 'Backup your data to the cloud',
-          trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-          onTap: _showFeatureNotImplemented,
-        ),
-        _buildDivider(),
-        _buildSettingsTile(
-          icon: Icons.logout,
-          title: 'Sign Out',
-          subtitle: 'Sign out of your account',
-          trailing: Icon(Icons.arrow_forward_ios, size: 16, color: Theme.of(context).colorScheme.error),
-          titleColor: Theme.of(context).colorScheme.error,
-          onTap: _showSignOutDialog,
-        ),
-      ],
-    );
-  }
-
-  Widget _buildAboutSection() {
-    return _buildSettingsCard(
-      children: [
-        _buildSettingsTile(
-          icon: Icons.help_outline,
-          title: 'Help & Support',
-          subtitle: 'Get help and contact support',
-          trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-          onTap: _showFeatureNotImplemented,
-        ),
-        _buildDivider(),
-        _buildSettingsTile(
-          icon: Icons.privacy_tip_outlined,
-          title: 'Privacy Policy',
-          subtitle: 'Read our privacy policy',
-          trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-          onTap: _showFeatureNotImplemented,
-        ),
-        _buildDivider(),
-        _buildSettingsTile(
-          icon: Icons.info_outline,
-          title: 'About myhx-',
-          subtitle: 'Version 1.0.0',
-          onTap: () {
-            showAboutDialog(
-              context: context,
-              applicationName: 'myhx-',
-              applicationVersion: '1.0.0',
-              applicationLegalese: '© 2024 MyHx- Team. All rights reserved.',
-              children: [
-                const SizedBox(height: 16),
-                const Text('myhx- is a smart medical history application designed to assist healthcare professionals.'),
               ],
-            );
-          },
-        ),
-      ],
+            ),
     );
   }
 
-  Widget _buildSettingsCard({required List<Widget> children}) {
+  Widget _pill(String text, ThemeData theme) {
     return Container(
+      padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.sm + 2, vertical: 4),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 2))],
+        color: theme.colorScheme.primary.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(99),
       ),
-      child: Column(children: children),
+      child: Text(
+        text,
+        style: AppTypography.caption(context)
+            .copyWith(color: theme.colorScheme.primary),
+      ),
     );
   }
 
-  Widget _buildSettingsTile({required IconData icon, required String title, String? subtitle, Widget? trailing, Color? titleColor, VoidCallback? onTap}) {
-    final colors = Theme.of(context).colorScheme;
+  Widget _sectionLabel(String text) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+          AppSpacing.xs, 0, AppSpacing.xs, AppSpacing.sm),
+      child: Text(text.toUpperCase(),
+          style: AppTypography.caption(context).copyWith(letterSpacing: 1)),
+    );
+  }
+
+  Widget _divider() => Padding(
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+        child: Divider(height: 1, color: Theme.of(context).colorScheme.outlineVariant),
+      );
+
+  Widget _tile({
+    required IconData icon,
+    required String title,
+    String? subtitle,
+    Widget? trailing,
+    VoidCallback? onTap,
+  }) {
+    final theme = Theme.of(context);
     return ListTile(
-      leading: Icon(icon, color: titleColor ?? colors.primary),
-      title: Text(title, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, color: titleColor ?? colors.onSurface)),
-      subtitle: subtitle != null ? Text(subtitle, style: TextStyle(fontSize: 14, color: colors.onSurface.withValues(alpha: 0.7))) : null,
-      trailing: trailing,
       onTap: onTap,
+      leading: Container(
+        padding: const EdgeInsets.all(AppSpacing.sm),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.primary.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+        ),
+        child: Icon(icon, size: 20, color: theme.colorScheme.primary),
+      ),
+      title: Text(title, style: AppTypography.titleMedium(context)),
+      subtitle: subtitle == null
+          ? null
+          : Text(subtitle, style: AppTypography.caption(context)),
+      trailing: trailing,
     );
   }
 
-  Widget _buildDivider() {
-    return Divider(height: 1, color: Theme.of(context).dividerColor, indent: 56);
-  }
-
-  void _showLanguageDialog() {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Select Language'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: _languages.map((language) {
-              return RadioListTile<String>(
-                title: Text(language),
-                value: language,
-                groupValue: _selectedLanguage,
-                activeColor: Theme.of(context).colorScheme.primary,
-                onChanged: (String? value) {
-                  setState(() { _selectedLanguage = value!; });
-                  Navigator.of(context).pop();
-                  _showFeatureNotImplemented();
-                },
-              );
-            }).toList(),
-          ),
-        );
-      },
-    );
-  }
-
-  void _showSignOutDialog() {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Sign Out'),
-          content: const Text('Are you sure you want to sign out?'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: Text('Cancel', style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7))),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                Navigator.of(context).pushAndRemoveUntil(
-                  MaterialPageRoute(builder: (context) => const LoginScreen()),
-                  (route) => false,
-                );
-              },
-              child: Text('Sign Out', style: TextStyle(color: Theme.of(context).colorScheme.error)),
-            ),
-          ],
-        );
-      },
+  Widget _languageTile(String label, String code, LocaleProvider provider) {
+    final selected = provider.locale.languageCode == code;
+    final theme = Theme.of(context);
+    return ListTile(
+      onTap: () => provider.setLocale(Locale(code)),
+      leading: Container(
+        padding: const EdgeInsets.all(AppSpacing.sm),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.primary.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+        ),
+        child: Icon(Icons.translate_rounded,
+            size: 20, color: theme.colorScheme.primary),
+      ),
+      title: Text(label, style: AppTypography.titleMedium(context)),
+      trailing: selected
+          ? Icon(Icons.check_circle_rounded, color: theme.colorScheme.primary)
+          : const Icon(Icons.radio_button_unchecked_rounded),
     );
   }
 }
