@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart'; // استيراد Firebase Auth
+import 'package:firebase_auth/firebase_auth.dart';
 import '../models/patient.dart';
 import '../services/database_service.dart';
+import '../utils/app_spacing.dart';
+import '../utils/app_typography.dart';
+import '../widgets/app_button.dart';
+import '../widgets/app_card.dart';
+import '../widgets/app_text_field.dart';
 import 'dynamic_medical_history_screen.dart';
-
 
 class AddPatientScreen extends StatefulWidget {
   const AddPatientScreen({super.key});
@@ -25,7 +29,6 @@ class _AddPatientScreenState extends State<AddPatientScreen> {
   String? _selectedDepartment;
   bool _isLoading = false;
 
-  final List<String> _genders = ['male', 'female'];
   final List<String> _departments = [
     'Pediatrics',
     'Internal Medicine',
@@ -33,6 +36,14 @@ class _AddPatientScreenState extends State<AddPatientScreen> {
     'Cardiology',
     'General',
   ];
+
+  static const Map<String, IconData> _departmentIcons = {
+    'Pediatrics': Icons.child_care_rounded,
+    'Internal Medicine': Icons.monitor_heart_rounded,
+    'Surgery': Icons.medical_services_rounded,
+    'Cardiology': Icons.favorite_rounded,
+    'General': Icons.local_hospital_rounded,
+  };
 
   final DatabaseService _dbService = DatabaseService();
 
@@ -45,37 +56,39 @@ class _AddPatientScreenState extends State<AddPatientScreen> {
     super.dispose();
   }
 
+  int get _age =>
+      _selectedDate != null ? DateTime.now().year - _selectedDate!.year : 0;
+
+  Future<void> _pickDate() async {
+    final now = DateTime.now();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _selectedDate ?? DateTime(now.year - 30),
+      firstDate: DateTime(1900),
+      lastDate: now,
+    );
+    if (picked != null) setState(() => _selectedDate = picked);
+  }
+
   Future<void> _handleNextStep() async {
     if (!_formKey.currentState!.validate() || _selectedDepartment == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text(
-            'Please fill all required fields, including department.',
-          ),
+          content: Text('Please fill all required fields, including department.'),
         ),
       );
       return;
     }
 
-    setState(() {
-      _isLoading = true;
-    });
+    setState(() => _isLoading = true);
 
-    final age = _selectedDate != null
-        ? DateTime.now().year - _selectedDate!.year
-        : 0;
-
-    // الحصول على UID الطبيب الحالي
-    // تم إزالة التحقق من تسجيل الدخول للسماح بالانتقال إلى صفحة التاريخ المرضي
-    // بعد تسجيل مريض جديد دون الحاجة لتسجيل الدخول.
     final currentUser = FirebaseAuth.instance.currentUser;
 
-    // إنشاء مريض مؤقت بدون ID (سيتم تعيينه من Firestore)
     final newPatient = Patient(
-      id: '', // سيتم تحديثه بعد الحفظ في Firestore
+      id: '',
       doctorId: currentUser?.uid ?? 'anonymous',
       name: _nameController.text.trim(),
-      age: age,
+      age: _age,
       gender: _selectedGender,
       dateOfBirth: _selectedDate ?? DateTime.now(),
       createdAt: DateTime.now(),
@@ -86,18 +99,14 @@ class _AddPatientScreenState extends State<AddPatientScreen> {
     );
 
     try {
-      // حفظ المريض والحصول على ID الحقيقي من Firestore
-      print("=== Adding new patient ===");
       final firestorePatientId = await _dbService.addPatient(newPatient);
-      print("Patient added successfully with Firestore ID: $firestorePatientId");
-      
+
       if (mounted) {
-        // استخدام ID الحقيقي من Firestore
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(
             builder: (context) => DynamicMedicalHistoryScreen(
               patient: {
-                'id': firestorePatientId, // استخدام ID من Firestore
+                'id': firestorePatientId,
                 'name': newPatient.name,
                 'age': newPatient.age,
                 'gender': newPatient.gender,
@@ -109,18 +118,12 @@ class _AddPatientScreenState extends State<AddPatientScreen> {
         );
       }
     } catch (e) {
-      print("ERROR adding patient: $e");
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error: $e')));
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Error: $e')));
       }
     } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -128,331 +131,221 @@ class _AddPatientScreenState extends State<AddPatientScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Scaffold(
-      backgroundColor: theme.colorScheme.surface,
+      backgroundColor: theme.colorScheme.surfaceContainerHighest,
       appBar: AppBar(
-        title: const Text('Add New Patient'),
-        elevation: 0,
-        backgroundColor: theme.colorScheme.surface,
-        foregroundColor: theme.colorScheme.onSurface,
+        title: const Text('New Patient'),
+        backgroundColor: theme.colorScheme.surfaceContainerHighest,
       ),
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildFormCard(
-                  title: 'Basic Information',
-                  icon: Icons.person,
+        child: Form(
+          key: _formKey,
+          child: ListView(
+            padding: const EdgeInsets.all(AppSpacing.md),
+            children: [
+              _stepHeader(theme),
+              const SizedBox(height: AppSpacing.md),
+              AppCard(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    _buildStyledTextField(
+                    _sectionTitle('Basic information', Icons.person_outline),
+                    const SizedBox(height: AppSpacing.md),
+                    AppTextField(
                       controller: _nameController,
-                      label: 'Full Name',
-                      icon: Icons.person_outline,
-                      isRequired: true,
-                      validator: (v) => (v == null || v.isEmpty)
-                          ? 'Full name is required'
+                      label: 'Patient name',
+                      hint: 'Full name',
+                      prefixIcon: Icons.badge_outlined,
+                      validator: (v) => (v == null || v.trim().isEmpty)
+                          ? 'Please enter the patient name'
                           : null,
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: AppSpacing.md),
+                    AppTextField(
+                      readOnly: true,
+                      onTap: _pickDate,
+                      label: 'Date of birth',
+                      hint: _selectedDate == null
+                          ? 'Select date'
+                          : '${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year}  •  $_age yrs',
+                      prefixIcon: Icons.cake_outlined,
+                      suffixIcon: Icons.calendar_today_outlined,
+                      onSuffixTap: _pickDate,
+                      validator: (_) =>
+                          _selectedDate == null ? 'Please select a date of birth' : null,
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                    Text('Gender', style: AppTypography.titleMedium(context)),
+                    const SizedBox(height: AppSpacing.sm),
                     Row(
                       children: [
-                        Expanded(child: _buildDateField(theme)),
-                        const SizedBox(width: 16),
-                        Expanded(child: _buildGenderDropdown(theme)),
+                        Expanded(
+                          child: _genderTile('male', 'Male', Icons.male_rounded),
+                        ),
+                        const SizedBox(width: AppSpacing.sm),
+                        Expanded(
+                          child: _genderTile('female', 'Female', Icons.female_rounded),
+                        ),
                       ],
                     ),
                   ],
                 ),
-                const SizedBox(height: 20),
-
-                _buildFormCard(
-                  title: 'Hospital Information',
-                  icon: Icons.local_hospital,
+              ),
+              const SizedBox(height: AppSpacing.md),
+              AppCard(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
+                    _sectionTitle('Department', Icons.apartment_outlined),
+                    const SizedBox(height: AppSpacing.md),
+                    Wrap(
+                      spacing: AppSpacing.sm,
+                      runSpacing: AppSpacing.sm,
+                      children: _departments.map(_departmentChip).toList(),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: AppSpacing.md),
+              AppCard(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _sectionTitle('Admission details', Icons.hotel_outlined),
+                    const SizedBox(height: AppSpacing.md),
                     Row(
                       children: [
                         Expanded(
-                          child: _buildStyledTextField(
+                          child: AppTextField(
                             controller: _wardController,
-                            label: 'Ward No',
-                            icon: Icons.domain,
-                            isRequired: true,
-                            validator: (v) => (v == null || v.isEmpty)
-                                ? 'Ward number is required'
+                            label: 'Ward',
+                            hint: 'A3',
+                            prefixIcon: Icons.meeting_room_outlined,
+                            validator: (v) => (v == null || v.trim().isEmpty)
+                                ? 'Required'
                                 : null,
                           ),
                         ),
-                        const SizedBox(width: 16),
+                        const SizedBox(width: AppSpacing.sm),
                         Expanded(
-                          child: _buildStyledTextField(
+                          child: AppTextField(
                             controller: _roomController,
-                            label: 'Room No',
-                            icon: Icons.meeting_room,
-                            isRequired: true,
-                            validator: (v) => (v == null || v.isEmpty)
-                                ? 'Room number is required'
+                            label: 'Room',
+                            hint: '12',
+                            prefixIcon: Icons.numbers_rounded,
+                            validator: (v) => (v == null || v.trim().isEmpty)
+                                ? 'Required'
                                 : null,
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 16),
-                    _buildStyledTextField(
+                    const SizedBox(height: AppSpacing.md),
+                    AppTextField(
                       controller: _notesController,
-                      label: 'Additional Notes',
-                      icon: Icons.note_alt_outlined,
+                      label: 'Notes (optional)',
+                      hint: 'Anything worth remembering about this patient',
                       maxLines: 3,
                     ),
                   ],
                 ),
-                const SizedBox(height: 20),
+              ),
+              const SizedBox(height: AppSpacing.lg),
+              AppButton(
+                label: 'Continue to medical history',
+                icon: Icons.arrow_forward_rounded,
+                isLoading: _isLoading,
+                onPressed: _handleNextStep,
+              ),
+              const SizedBox(height: AppSpacing.xl),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 
-                _buildFormCard(
-                  title: 'Department Selection',
-                  icon: Icons.medical_services,
-                  children: [
-                    Text(
-                      'Select Department *',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: theme.colorScheme.onSurface,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Wrap(
-                      spacing: 8.0,
-                      runSpacing: 8.0,
-                      children: _departments.map((department) {
-                        final isSelected = _selectedDepartment == department;
-                        return FilterChip(
-                          label: Text(department),
-                          selected: isSelected,
-                          onSelected: (selected) {
-                            if (selected) {
-                              setState(() => _selectedDepartment = department);
-                            }
-                          },
-                          backgroundColor: theme.colorScheme.surface,
-                          selectedColor: theme.colorScheme.primary.withValues(alpha: 
-                            0.2,
-                          ),
-                          checkmarkColor: theme.colorScheme.primary,
-                          labelStyle: TextStyle(
-                            color: isSelected
-                                ? theme.colorScheme.primary
-                                : theme.colorScheme.onSurface,
-                            fontWeight: isSelected
-                                ? FontWeight.w600
-                                : FontWeight.normal,
-                          ),
-                          side: BorderSide(
-                            color: isSelected
-                                ? theme.colorScheme.primary
-                                : theme.colorScheme.outline.withValues(alpha: 0.3),
-                            width: isSelected ? 2 : 1,
-                          ),
-                        );
-                      }).toList(),
-                    ),
-                  ],
+  Widget _stepHeader(ThemeData theme) {
+    return AppCard(
+      color: theme.colorScheme.primary,
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(AppSpacing.sm + 2),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.onPrimary.withValues(alpha: 0.18),
+              borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+            ),
+            child: Icon(Icons.person_add_alt_1_rounded,
+                color: theme.colorScheme.onPrimary),
+          ),
+          const SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Step 1 of 2',
+                  style: AppTypography.caption(context)
+                      .copyWith(color: theme.colorScheme.onPrimary.withValues(alpha: 0.85)),
                 ),
-                const SizedBox(height: 32),
-
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    onPressed: _isLoading ? null : _handleNextStep,
-                    icon: _isLoading
-                        ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Icon(Icons.arrow_forward, size: 20),
-                    label: Text(
-                      _isLoading
-                          ? 'Processing...'
-                          : 'Continue to Medical History',
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: theme.colorScheme.primary,
-                      foregroundColor: Colors.white,
-                      elevation: 2,
-                      shadowColor: theme.colorScheme.primary.withValues(alpha: 0.3),
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                  ),
+                const SizedBox(height: 2),
+                Text(
+                  'Register the patient',
+                  style: AppTypography.titleLarge(context)
+                      .copyWith(color: theme.colorScheme.onPrimary),
                 ),
               ],
             ),
           ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildFormCard({
-    required String title,
-    required IconData icon,
-    required List<Widget> children,
-  }) {
-    final theme = Theme.of(context);
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-        border: Border.all(
-          color: theme.colorScheme.outline.withValues(alpha: 0.1),
-          width: 1,
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.primary.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Icon(icon, color: theme.colorScheme.primary, size: 20),
-              ),
-              const SizedBox(width: 12),
-              Text(
-                title,
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: theme.colorScheme.onSurface,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-          ...children,
         ],
       ),
     );
   }
 
-  Widget _buildStyledTextField({
-    required TextEditingController controller,
-    required String label,
-    required IconData icon,
-    bool isRequired = false,
-    int maxLines = 1,
-    String? Function(String?)? validator,
-  }) {
+  Widget _sectionTitle(String title, IconData icon) {
     final theme = Theme.of(context);
-    return TextFormField(
-      controller: controller,
-      maxLines: maxLines,
-      validator: validator,
-      decoration: InputDecoration(
-        labelText: isRequired ? '$label *' : label,
-        prefixIcon: Icon(icon, color: theme.colorScheme.primary),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(
-            color: theme.colorScheme.outline.withValues(alpha: 0.3),
-          ),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(
-            color: theme.colorScheme.outline.withValues(alpha: 0.3),
-          ),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: theme.colorScheme.primary, width: 2),
-        ),
-        errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: theme.colorScheme.error),
-        ),
-        filled: true,
-        fillColor: theme.colorScheme.surface,
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 16,
-        ),
-      ),
+    return Row(
+      children: [
+        Icon(icon, size: 18, color: theme.colorScheme.primary),
+        const SizedBox(width: AppSpacing.sm),
+        Text(title, style: AppTypography.titleMedium(context)),
+      ],
     );
   }
 
-  Widget _buildDateField(ThemeData theme) {
+  Widget _genderTile(String value, String label, IconData icon) {
+    final theme = Theme.of(context);
+    final selected = _selectedGender == value;
     return InkWell(
-      onTap: () async {
-        final date = await showDatePicker(
-          context: context,
-          initialDate: DateTime(2000),
-          firstDate: DateTime(1900),
-          lastDate: DateTime.now(),
-        );
-        if (date != null) setState(() => _selectedDate = date);
-      },
-      child: Container(
-        padding: const EdgeInsets.all(16),
+      borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+      onTap: () => setState(() => _selectedGender = value),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
         decoration: BoxDecoration(
-          border: Border.all(color: theme.colorScheme.outline.withValues(alpha: 0.3)),
-          borderRadius: BorderRadius.circular(12),
-          color: theme.colorScheme.surface,
+          color: selected
+              ? theme.colorScheme.primary.withValues(alpha: 0.12)
+              : theme.colorScheme.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+          border: Border.all(
+            color: selected ? theme.colorScheme.primary : theme.colorScheme.outline,
+            width: selected ? 2 : 1,
+          ),
         ),
-        child: Row(
+        child: Column(
           children: [
-            Icon(
-              Icons.calendar_today,
-              color: theme.colorScheme.primary,
-              size: 20,
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Date of Birth',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    _selectedDate != null
-                        ? '${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year}'
-                        : 'Select Date',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: _selectedDate != null
-                          ? theme.colorScheme.onSurface
-                          : theme.colorScheme.onSurface.withValues(alpha: 0.5),
-                    ),
-                  ),
-                ],
+            Icon(icon,
+                color: selected
+                    ? theme.colorScheme.primary
+                    : theme.colorScheme.onSurfaceVariant),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: AppTypography.bodyMedium(context).copyWith(
+                color: selected
+                    ? theme.colorScheme.primary
+                    : theme.colorScheme.onSurfaceVariant,
+                fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
               ),
             ),
           ],
@@ -461,52 +354,19 @@ class _AddPatientScreenState extends State<AddPatientScreen> {
     );
   }
 
-  Widget _buildGenderDropdown(ThemeData theme) {
-    return Container(
-      decoration: BoxDecoration(
-        border: Border.all(color: theme.colorScheme.outline.withValues(alpha: 0.3)),
-        borderRadius: BorderRadius.circular(12),
-        color: theme.colorScheme.surface,
+  Widget _departmentChip(String department) {
+    final theme = Theme.of(context);
+    final selected = _selectedDepartment == department;
+    return ChoiceChip(
+      selected: selected,
+      onSelected: (_) => setState(() => _selectedDepartment = department),
+      avatar: Icon(
+        _departmentIcons[department] ?? Icons.local_hospital_rounded,
+        size: 18,
+        color: selected ? theme.colorScheme.primary : theme.colorScheme.onSurfaceVariant,
       ),
-      padding: const EdgeInsets.only(left: 16.0, right: 12.0),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButtonFormField<String>(
-          value: _selectedGender,
-          decoration: const InputDecoration(
-            border: InputBorder.none,
-            contentPadding: EdgeInsets.zero,
-          ),
-          isExpanded: true,
-          icon: Icon(Icons.arrow_drop_down, color: theme.colorScheme.onSurface.withValues(alpha: 0.7)),
-          items: _genders.map((g) {
-            return DropdownMenuItem(
-              value: g,
-              child: Row(
-                children: [
-                  Icon(
-                    g == 'male' ? Icons.male : Icons.female,
-                    color: theme.colorScheme.primary,
-                    size: 20,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    g == 'male' ? 'Male' : 'Female',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: theme.colorScheme.onSurface,
-                    ),
-                  ),
-                ],
-              ),
-            );
-          }).toList(),
-          onChanged: (value) {
-            if (value != null) {
-              setState(() => _selectedGender = value);
-            }
-          },
-        ),
-      ),
+      label: Text(department),
+      showCheckmark: false,
     );
   }
 }
