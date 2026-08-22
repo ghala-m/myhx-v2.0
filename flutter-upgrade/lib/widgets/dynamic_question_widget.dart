@@ -252,14 +252,23 @@ class _DynamicQuestionWidgetState extends State<DynamicQuestionWidget> {
   }
 
   Widget _buildTextWidget(ThemeData theme) {
-    return TextFormField(
-      controller: _textController,
-      decoration: InputDecoration(
-        hintText: widget.question.placeholder ?? 'Enter answer...',
-      ),
-      onChanged: _updateAnswer,
+    return Row(
+      children: [
+        Expanded(
+          child: TextFormField(
+            controller: _textController,
+            decoration: InputDecoration(
+              hintText: widget.question.placeholder ?? 'Enter answer...',
+            ),
+            onChanged: _updateAnswer,
+          ),
+        ),
+        const SizedBox(width: AppSpacing.sm),
+        _buildMic(),
+      ],
     );
   }
+
 
   Widget _buildNumberWidget(ThemeData theme) {
     return TextFormField(
