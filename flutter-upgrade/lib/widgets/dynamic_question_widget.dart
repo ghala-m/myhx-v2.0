@@ -3,6 +3,7 @@ import '../models/question_model.dart';
 import '../utils/app_colors.dart';
 import '../utils/app_spacing.dart';
 import '../utils/app_typography.dart';
+import 'voice_input_button.dart';
 
 /// Renders a single dynamic medical-history question.
 class DynamicQuestionWidget extends StatefulWidget {
@@ -252,14 +253,23 @@ class _DynamicQuestionWidgetState extends State<DynamicQuestionWidget> {
   }
 
   Widget _buildTextWidget(ThemeData theme) {
-    return TextFormField(
-      controller: _textController,
-      decoration: InputDecoration(
-        hintText: widget.question.placeholder ?? 'Enter answer...',
-      ),
-      onChanged: _updateAnswer,
+    return Row(
+      children: [
+        Expanded(
+          child: TextFormField(
+            controller: _textController,
+            decoration: InputDecoration(
+              hintText: widget.question.placeholder ?? 'Enter answer...',
+            ),
+            onChanged: _updateAnswer,
+          ),
+        ),
+        const SizedBox(width: AppSpacing.sm),
+        _buildMic(),
+      ],
     );
   }
+
 
   Widget _buildNumberWidget(ThemeData theme) {
     return TextFormField(
@@ -328,15 +338,39 @@ class _DynamicQuestionWidgetState extends State<DynamicQuestionWidget> {
   }
 
   Widget _buildTextAreaWidget(ThemeData theme) {
-    return TextFormField(
-      controller: _textController,
-      maxLines: 4,
-      decoration: InputDecoration(
-        hintText: widget.question.placeholder ?? 'Enter details...',
-      ),
-      onChanged: _updateAnswer,
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(
+          child: TextFormField(
+            controller: _textController,
+            maxLines: 4,
+            decoration: InputDecoration(
+              hintText: widget.question.placeholder ?? 'Enter details...',
+            ),
+            onChanged: _updateAnswer,
+          ),
+        ),
+        const SizedBox(width: AppSpacing.sm),
+        _buildMic(),
+      ],
     );
   }
+
+  /// Mic button that appends dictated text into the field.
+  Widget _buildMic() {
+    return VoiceInputButton(
+      arabic: Directionality.of(context) == TextDirection.rtl,
+      onTranscript: (text) {
+        if (text.trim().isEmpty) return;
+        _textController.text = text;
+        _textController.selection =
+            TextSelection.collapsed(offset: _textController.text.length);
+        _updateAnswer(text);
+      },
+    );
+  }
+
 
   Widget _buildSelectWidget(ThemeData theme) {
     if (widget.question.options == null || widget.question.options!.isEmpty) {

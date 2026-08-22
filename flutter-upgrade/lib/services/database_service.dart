@@ -217,8 +217,18 @@ class DatabaseService {
                 .collection("reports")
                 .orderBy("createdAt", descending: true)
                 .get();
+            final patientData = doc.data() as Map<String, dynamic>;
             for (var reportDoc in reportsSnapshot.docs) {
-              allReports.add(reportDoc.data());
+              allReports.add({
+                ...reportDoc.data(),
+                'reportId': reportDoc.id,
+                'patientId': patientId,
+                'patientName': patientData['name'] ?? '',
+                'patientAge': patientData['age'],
+                'patientGender': patientData['gender'] ?? '',
+                'patientDepartment': patientData['department'] ?? '',
+                'patientData': patientData,
+              });
             }
           }
           // Sort all reports by createdAt descending
