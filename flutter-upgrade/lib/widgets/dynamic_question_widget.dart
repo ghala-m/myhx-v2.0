@@ -3,6 +3,7 @@ import '../models/question_model.dart';
 import '../utils/app_colors.dart';
 import '../utils/app_spacing.dart';
 import '../utils/app_typography.dart';
+import 'voice_input_button.dart';
 
 /// Renders a single dynamic medical-history question.
 class DynamicQuestionWidget extends StatefulWidget {

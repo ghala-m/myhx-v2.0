@@ -341,7 +341,6 @@ class _DynamicMedicalHistoryScreenState extends State<DynamicMedicalHistoryScree
                           question: question,
                           answer: _answers[question.id],
                           onAnswerChanged: (answer) => _onAnswerChanged(question.id, answer), 
-                          currentAnswer: _answers[question.id],
                         ),
                       );
                     },
