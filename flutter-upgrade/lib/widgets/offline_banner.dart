@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../l10n/app_strings.dart';
 import '../services/offline_service.dart';
 import '../utils/app_spacing.dart';
 
-/// Thin status strip: shows offline state and pending/sync progress.
+/// High-contrast status strip: offline state, pending writes and sync progress.
+///
+/// Uses solid, saturated backgrounds (not pale containers) so it stays legible
+/// on both light and dark themes.
 class OfflineBanner extends StatelessWidget {
   const OfflineBanner({super.key});
 
@@ -12,7 +16,6 @@ class OfflineBanner extends StatelessWidget {
   Widget build(BuildContext context) {
     final offline = context.watch<OfflineService>();
     final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
 
     final bool syncing = offline.syncState == SyncState.syncing;
     if (offline.isOnline && !offline.hasPending && !syncing) {
@@ -20,60 +23,88 @@ class OfflineBanner extends StatelessWidget {
     }
 
     late final Color bg;
-    late final Color fg;
     late final IconData icon;
     late final String message;
+    const Color fg = Color(0xFFFFFFFF);
 
     if (offline.isOffline) {
-      bg = scheme.errorContainer;
-      fg = scheme.onErrorContainer;
-      icon = Icons.cloud_off_rounded;
+      bg = const Color(0xFFB3261E); // solid red — unmistakable
+      icon = Icons.wifi_off_rounded;
       message = offline.hasPending
-          ? 'Offline — ${offline.pendingCount} change(s) will sync later'
-          : 'Offline — showing cached data';
+          ? '${context.tr('offlineBanner')} · ${offline.pendingCount} ${context.tr('pendingChanges')}'
+          : context.tr('offlineBanner');
     } else if (syncing) {
-      bg = scheme.secondaryContainer;
-      fg = scheme.onSecondaryContainer;
+      bg = const Color(0xFF0F766E); // deep teal
       icon = Icons.sync_rounded;
-      message = 'Syncing ${offline.pendingCount} change(s)…';
+      message = '${context.tr('syncing')} (${offline.pendingCount})';
     } else {
-      bg = scheme.tertiaryContainer;
-      fg = scheme.onTertiaryContainer;
+      bg = const Color(0xFF92400E); // amber-900
       icon = Icons.schedule_rounded;
-      message = '${offline.pendingCount} change(s) pending sync';
+      message = '${offline.pendingCount} ${context.tr('pendingChanges')}';
     }
 
     return Material(
       color: bg,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.md,
-          vertical: AppSpacing.sm,
-        ),
-        child: Row(
-          children: [
-            if (syncing)
-              SizedBox(
-                width: 16,
-                height: 16,
-                child: CircularProgressIndicator(strokeWidth: 2, color: fg),
-              )
-            else
-              Icon(icon, size: 18, color: fg),
-            const SizedBox(width: AppSpacing.sm),
-            Expanded(
-              child: Text(
-                message,
-                style: theme.textTheme.bodySmall?.copyWith(color: fg),
+      child: SafeArea(
+        bottom: false,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.md,
+            vertical: 10,
+          ),
+          child: Row(
+            children: [
+              if (syncing)
+                const SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2.4,
+                    valueColor: AlwaysStoppedAnimation(fg),
+                  ),
+                )
+              else
+                const Icon(icon = Icons.wifi_off_rounded, size: 20, color: fg),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: Text(
+                  message,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: fg,
+                    fontWeight: FontWeight.w600,
+                    height: 1.25,
+                  ),
+                ),
               ),
-            ),
-            if (offline.isOnline && offline.hasPending && !syncing)
-              TextButton(
-                onPressed: offline.sync,
-                style: TextButton.styleFrom(foregroundColor: fg),
-                child: const Text('Sync now'),
-              ),
-          ],
+              if (!syncing)
+                TextButton(
+                  onPressed: () {
+                    if (offline.isOffline) {
+                      offline.refreshConnectivity();
+                    } else {
+                      offline.sync();
+                    }
+                  },
+                  style: TextButton.styleFrom(
+                    foregroundColor: fg,
+                    backgroundColor: const Color(0x33FFFFFF),
+                    minimumSize: const Size(0, 36),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.md,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                  ),
+                  child: Text(
+                    offline.isOffline
+                        ? context.tr('retry')
+                        : context.tr('syncNow'),
+                    style: const TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                ),
+            ],
+          ),
         ),
       ),
     );
