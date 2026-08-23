@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/foundation.dart';
+import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// A single queued write that will be replayed against Firestore once the
@@ -71,11 +72,11 @@ class OfflineService with ChangeNotifier {
   Future<void> init() async {
     await _loadQueue();
     final result = await Connectivity().checkConnectivity();
-    _online = _isConnected(result);
+    _online = await _resolveOnline(result);
 
-    _connectivitySub = Connectivity().onConnectivityChanged.listen((result) {
+    _connectivitySub = Connectivity().onConnectivityChanged.listen((result) async {
       final wasOffline = !_online;
-      _online = _isConnected(result);
+      _online = await _resolveOnline(result);
       notifyListeners();
       if (wasOffline && _online) {
         // Fire and forget – UI observes [syncState].
@@ -83,6 +84,35 @@ class OfflineService with ChangeNotifier {
       }
     });
     notifyListeners();
+  }
+
+  /// Connectivity plugin reports the radio/interface state only, and on
+  /// simulators it frequently reports `none` while the machine is perfectly
+  /// online. So whenever the plugin claims we're offline we double-check with a
+  /// real, tiny network request before telling the user anything.
+  Future<bool> _resolveOnline(dynamic result) async {
+    if (_isConnected(result)) return true;
+    return _hasRealInternet();
+  }
+
+  Future<bool> _hasRealInternet() async {
+    try {
+      final res = await http
+          .head(Uri.parse('https://clients3.google.com/generate_204'))
+          .timeout(const Duration(seconds: 3));
+      return res.statusCode >= 200 && res.statusCode < 400;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Re-checks connectivity on demand (used by the offline banner's retry).
+  Future<void> refreshConnectivity() async {
+    final result = await Connectivity().checkConnectivity();
+    final wasOffline = !_online;
+    _online = await _resolveOnline(result);
+    notifyListeners();
+    if (wasOffline && _online) unawaited(sync());
   }
 
   bool _isConnected(dynamic result) {
