@@ -8,6 +8,7 @@ import '../services/database_service.dart';
 import '../utils/app_spacing.dart';
 import '../widgets/app_card.dart';
 import '../widgets/offline_banner.dart';
+import '../l10n/app_strings.dart';
 
 class AnalyticsScreen extends StatefulWidget {
   const AnalyticsScreen({super.key});
@@ -56,7 +57,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     final theme = Theme.of(context);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Analytics')),
+      appBar: AppBar(title: const Text(context.tr('analytics'))),
       body: Column(
         children: [
           const OfflineBanner(),

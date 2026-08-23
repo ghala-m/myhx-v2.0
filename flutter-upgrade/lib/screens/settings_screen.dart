@@ -10,6 +10,7 @@ import '../utils/app_typography.dart';
 import '../utils/locale_provider.dart';
 import '../utils/theme_provider.dart';
 import '../widgets/app_card.dart';
+import '../l10n/app_strings.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -55,16 +56,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Log out'),
+        title: const Text(context.tr('logout')),
         content: const Text('Are you sure you want to log out of myhx?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Cancel'),
+            child: const Text(context.tr('cancel')),
           ),
           FilledButton(
             onPressed: () => Navigator.of(ctx).pop(true),
-            child: const Text('Log out'),
+            child: const Text(context.tr('logout')),
           ),
         ],
       ),
@@ -83,7 +84,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return Scaffold(
       backgroundColor: theme.colorScheme.surfaceContainerHighest,
       appBar: AppBar(
-        title: const Text('Settings'),
+        title: const Text(context.tr('settings')),
         backgroundColor: theme.colorScheme.surfaceContainerHighest,
       ),
       body: SafeArea(
@@ -175,7 +176,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             OutlinedButton.icon(
               onPressed: _confirmLogout,
               icon: const Icon(Icons.logout_rounded),
-              label: const Text('Log out'),
+              label: const Text(context.tr('logout')),
               style: OutlinedButton.styleFrom(
                 foregroundColor: AppColors.error,
                 side: const BorderSide(color: AppColors.error),
