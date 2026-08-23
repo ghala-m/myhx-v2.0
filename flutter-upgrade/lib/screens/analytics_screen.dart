@@ -57,7 +57,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     final theme = Theme.of(context);
 
     return Scaffold(
-      appBar: AppBar(title: const Text(context.tr('analytics'))),
+      appBar: AppBar(title: Text(context.tr('analytics'))),
       body: Column(
         children: [
           const OfflineBanner(),

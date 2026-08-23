@@ -248,7 +248,7 @@ class _SignupScreenState extends State<SignupScreen> {
                             style: AppTypography.bodyMedium(context)),
                         TextButton(
                           onPressed: () => Navigator.of(context).pop(),
-                          child: const Text(context.tr('login')),
+                          child: Text(context.tr('login')),
                         ),
                       ],
                     ),

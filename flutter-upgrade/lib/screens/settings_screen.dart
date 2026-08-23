@@ -56,16 +56,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text(context.tr('logout')),
+        title: Text(context.tr('logout')),
         content: const Text('Are you sure you want to log out of myhx?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text(context.tr('cancel')),
+            child: Text(context.tr('cancel')),
           ),
           FilledButton(
             onPressed: () => Navigator.of(ctx).pop(true),
-            child: const Text(context.tr('logout')),
+            child: Text(context.tr('logout')),
           ),
         ],
       ),
@@ -84,7 +84,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return Scaffold(
       backgroundColor: theme.colorScheme.surfaceContainerHighest,
       appBar: AppBar(
-        title: const Text(context.tr('settings')),
+        title: Text(context.tr('settings')),
         backgroundColor: theme.colorScheme.surfaceContainerHighest,
       ),
       body: SafeArea(
@@ -176,7 +176,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             OutlinedButton.icon(
               onPressed: _confirmLogout,
               icon: const Icon(Icons.logout_rounded),
-              label: const Text(context.tr('logout')),
+              label: Text(context.tr('logout')),
               style: OutlinedButton.styleFrom(
                 foregroundColor: AppColors.error,
                 side: const BorderSide(color: AppColors.error),

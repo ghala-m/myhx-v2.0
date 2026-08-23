@@ -260,7 +260,7 @@ class _DynamicMedicalHistoryScreenState extends State<DynamicMedicalHistoryScree
     if (_isLoading) {
       return Scaffold(
         appBar: AppBar(
-          title: const Text(context.tr('medicalHistory')),
+          title: Text(context.tr('medicalHistory')),
         ),
         body: const Center(
           child: CircularProgressIndicator(),
