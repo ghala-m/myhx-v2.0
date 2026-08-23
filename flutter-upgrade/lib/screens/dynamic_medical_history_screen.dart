@@ -12,6 +12,7 @@ import '../services/auth_service.dart';
 import '../services/clinical_ai_service.dart';
 import '../widgets/dynamic_question_widget.dart';
 import 'patient_record_screen.dart';
+import '../l10n/app_strings.dart';
 
 class DynamicMedicalHistoryScreen extends StatefulWidget {
   final Map<String, dynamic> patient;
@@ -259,7 +260,7 @@ class _DynamicMedicalHistoryScreenState extends State<DynamicMedicalHistoryScree
     if (_isLoading) {
       return Scaffold(
         appBar: AppBar(
-          title: const Text('Medical History'),
+          title: Text(context.tr('medicalHistory')),
         ),
         body: const Center(
           child: CircularProgressIndicator(),

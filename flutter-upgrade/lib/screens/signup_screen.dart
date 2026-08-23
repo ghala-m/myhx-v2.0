@@ -7,6 +7,7 @@ import '../utils/app_spacing.dart';
 import '../utils/app_typography.dart';
 import '../widgets/app_button.dart';
 import '../widgets/app_text_field.dart';
+import '../l10n/app_strings.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -247,7 +248,7 @@ class _SignupScreenState extends State<SignupScreen> {
                             style: AppTypography.bodyMedium(context)),
                         TextButton(
                           onPressed: () => Navigator.of(context).pop(),
-                          child: const Text('Sign in'),
+                          child: Text(context.tr('login')),
                         ),
                       ],
                     ),
