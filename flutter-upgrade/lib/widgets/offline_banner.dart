@@ -64,7 +64,7 @@ class OfflineBanner extends StatelessWidget {
                   ),
                 )
               else
-                const Icon(icon = Icons.wifi_off_rounded, size: 20, color: fg),
+                Icon(icon, size: 20, color: fg),
               const SizedBox(width: AppSpacing.sm),
               Expanded(
                 child: Text(
