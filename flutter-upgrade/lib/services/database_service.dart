@@ -253,6 +253,16 @@ class DatabaseService {
   }
 
   Future getMedicalHistory(String id) async {}
+
+  // --- تدفق تقارير مريض واحد (Timeline) ---
+  Stream<List<Map<String, dynamic>>> getReportsForPatient(String patientId) {
+    return _patientsCollection
+        .doc(patientId)
+        .collection("reports")
+        .orderBy("createdAt", descending: true)
+        .snapshots()
+        .map((snap) => snap.docs
+            .map((d) => {...d.data(), 'reportId': d.id, 'patientId': patientId})
+            .toList());
+  }
 }
-
-

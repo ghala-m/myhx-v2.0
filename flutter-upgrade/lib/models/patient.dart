@@ -73,8 +73,8 @@ class Patient {
   }
 
   Patient copyWith({
-    required String id,
-    required String name,
+    String? id,
+    String? name,
     int? age,
     String? gender,
     String? wardNumber,
@@ -88,8 +88,8 @@ class Patient {
     List<String>? diagnoses,
   }) {
     return Patient(
-      id: id,
-      name: name,
+      id: id ?? this.id,
+      name: name ?? this.name,
       age: age ?? this.age,
       gender: gender ?? this.gender,
       dateOfBirth: dateOfBirth ?? this.dateOfBirth,
