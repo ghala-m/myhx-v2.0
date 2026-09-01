@@ -7,7 +7,7 @@ import '../utils/app_typography.dart';
 import '../widgets/app_button.dart';
 import '../widgets/app_card.dart';
 import '../widgets/app_text_field.dart';
-import 'dynamic_medical_history_screen.dart';
+import 'history_mode_screen.dart';
 
 class AddPatientScreen extends StatefulWidget {
   const AddPatientScreen({super.key});
@@ -104,15 +104,8 @@ class _AddPatientScreenState extends State<AddPatientScreen> {
       if (mounted) {
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(
-            builder: (context) => DynamicMedicalHistoryScreen(
-              patient: {
-                'id': firestorePatientId,
-                'name': newPatient.name,
-                'age': newPatient.age,
-                'gender': newPatient.gender,
-                'department': newPatient.department,
-              },
-              department: _selectedDepartment!,
+            builder: (context) => HistoryModeScreen(
+              patient: newPatient.copyWith(id: firestorePatientId),
             ),
           ),
         );
