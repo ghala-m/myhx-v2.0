@@ -42,7 +42,7 @@ class Departments {
     Department(id: 'pediatrics', nameEn: 'Pediatrics', nameAr: 'الأطفال', icon: 'child_care', group: 'Medical'),
     Department(id: 'neonatology', nameEn: 'Neonatology', nameAr: 'حديثي الولادة', icon: 'crib', group: 'Medical'),
     Department(id: 'psychiatry', nameEn: 'Psychiatry', nameAr: 'الطب النفسي', icon: 'self_improvement', group: 'Medical'),
-    Department(id: 'family_medicine', nameEn: 'Family Medicine', nameAr: 'طب الأسرة', icon: '家', group: 'Medical'),
+    Department(id: 'family_medicine', nameEn: 'Family Medicine', nameAr: 'طب الأسرة', icon: 'family_restroom', group: 'Medical'),
 
     // ---------------- Surgical ----------------
     Department(id: 'general_surgery', nameEn: 'General Surgery', nameAr: 'الجراحة العامة', icon: 'healing', group: 'Surgical'),
