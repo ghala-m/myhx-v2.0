@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'app_colors.dart';
+import 'app_themes.dart';
 
 /// Modern Material 3 theme for myhx.
 ///
@@ -8,17 +9,22 @@ import 'app_colors.dart';
 class AppTheme {
   AppTheme._();
 
-  static ThemeData get light => _buildTheme(Brightness.light);
-  static ThemeData get dark => _buildTheme(Brightness.dark);
+  static ThemeData get light => _buildTheme(Brightness.light, AppPalettes.teal);
+  static ThemeData get dark => _buildTheme(Brightness.dark, AppPalettes.teal);
 
-  static ThemeData _buildTheme(Brightness brightness) {
+  static ThemeData lightOf(AppPalette palette) =>
+      _buildTheme(Brightness.light, palette);
+  static ThemeData darkOf(AppPalette palette) =>
+      _buildTheme(Brightness.dark, palette);
+
+  static ThemeData _buildTheme(Brightness brightness, AppPalette palette) {
     final isDark = brightness == Brightness.dark;
     final colorScheme = isDark
-        ? const ColorScheme.dark(
-            primary: AppColors.primary,
-            onPrimary: AppColors.onPrimary,
-            primaryContainer: AppColors.primaryDark,
-            secondary: AppColors.secondary,
+        ? ColorScheme.dark(
+            primary: palette.primaryLight,
+            onPrimary: const Color(0xFF04121A),
+            primaryContainer: palette.primaryDark,
+            secondary: palette.secondary,
             onSecondary: AppColors.onSecondary,
             secondaryContainer: AppColors.secondaryContainer,
             surface: AppColors.darkSurface,
@@ -31,11 +37,11 @@ class AppTheme {
             onError: AppColors.onPrimary,
             errorContainer: AppColors.errorContainer,
           )
-        : const ColorScheme.light(
-            primary: AppColors.primary,
+        : ColorScheme.light(
+            primary: palette.primary,
             onPrimary: AppColors.onPrimary,
-            primaryContainer: AppColors.primaryContainer,
-            secondary: AppColors.secondary,
+            primaryContainer: palette.primaryLight.withValues(alpha: 0.22),
+            secondary: palette.secondary,
             onSecondary: AppColors.onSecondary,
             secondaryContainer: AppColors.secondaryContainer,
             surface: AppColors.surface,
@@ -67,7 +73,7 @@ class AppTheme {
           color: colorScheme.onSurface,
         ),
       ),
-      cardTheme: CardTheme(
+      cardTheme: CardThemeData(
         color: colorScheme.surface,
         elevation: 0,
         shape: RoundedRectangleBorder(
@@ -164,7 +170,7 @@ class AppTheme {
         backgroundColor: colorScheme.inverseSurface,
         contentTextStyle: GoogleFonts.inter(color: colorScheme.onInverseSurface),
       ),
-      dialogTheme: DialogTheme(
+      dialogTheme: DialogThemeData(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         backgroundColor: colorScheme.surface,
       ),
