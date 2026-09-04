@@ -151,7 +151,19 @@ class _PatientRecordScreenState extends State<PatientRecordScreen> {
           icon: const Icon(Icons.close_rounded),
           onPressed: () => Navigator.of(context).pop(),
         ),
+        actions: [
+          IconButton(
+            tooltip: 'Timeline & QR',
+            icon: const Icon(Icons.timeline_rounded),
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => PatientTimelineScreen(patient: widget.patient),
+              ),
+            ),
+          ),
+        ],
       ),
+
       body: FutureBuilder<Map<String, dynamic>?>(
         future: _reportFuture,
         builder: (context, snapshot) {
