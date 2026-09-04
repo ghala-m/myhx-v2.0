@@ -7,6 +7,8 @@ import '../l10n/app_strings.dart';
 import '../models/patient.dart';
 import '../services/database_service.dart';
 import '../utils/app_spacing.dart';
+import 'patient_timeline_screen.dart';
+
 
 /// Patient record: summary, medical history and clinical AI analysis.
 ///
@@ -151,7 +153,19 @@ class _PatientRecordScreenState extends State<PatientRecordScreen> {
           icon: const Icon(Icons.close_rounded),
           onPressed: () => Navigator.of(context).pop(),
         ),
+        actions: [
+          IconButton(
+            tooltip: 'Timeline & QR',
+            icon: const Icon(Icons.timeline_rounded),
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => PatientTimelineScreen(patient: widget.patient),
+              ),
+            ),
+          ),
+        ],
       ),
+
       body: FutureBuilder<Map<String, dynamic>?>(
         future: _reportFuture,
         builder: (context, snapshot) {
