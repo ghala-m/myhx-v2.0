@@ -1,6 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:provider/provider.dart';
+
+import '../data/departments.dart';
+import '../l10n/app_strings.dart';
 import '../models/patient.dart';
+import '../services/role_service.dart';
+import '../utils/department_icons.dart';
 import '../services/database_service.dart';
 import '../utils/app_spacing.dart';
 import '../utils/app_typography.dart';
@@ -193,10 +199,21 @@ class _AddPatientScreenState extends State<AddPatientScreen> {
                   children: [
                     _sectionTitle('Department', Icons.apartment_outlined),
                     const SizedBox(height: AppSpacing.md),
+                    TextField(
+                      decoration: const InputDecoration(
+                        hintText: 'Search departments…',
+                        prefixIcon: Icon(Icons.search_rounded, size: 20),
+                        isDense: true,
+                      ),
+                      onChanged: (v) => setState(() => _deptQuery = v),
+                    ),
+                    const SizedBox(height: AppSpacing.md),
                     Wrap(
                       spacing: AppSpacing.sm,
                       runSpacing: AppSpacing.sm,
-                      children: _departments.map(_departmentChip).toList(),
+                      children: _visibleDepartments(context)
+                          .map(_departmentChip)
+                          .toList(),
                     ),
                   ],
                 ),
@@ -350,18 +367,21 @@ class _AddPatientScreenState extends State<AddPatientScreen> {
     );
   }
 
-  Widget _departmentChip(String department) {
+  Widget _departmentChip(Department department) {
     final theme = Theme.of(context);
-    final selected = _selectedDepartment == department;
+    final arabic = S.of(context).isArabic;
+    final selected = _selectedDepartment == department.id;
     return ChoiceChip(
       selected: selected,
-      onSelected: (_) => setState(() => _selectedDepartment = department),
+      onSelected: (_) => setState(() => _selectedDepartment = department.id),
       avatar: Icon(
-        _departmentIcons[department] ?? Icons.local_hospital_rounded,
+        DepartmentIcons.resolve(department.icon),
         size: 18,
-        color: selected ? theme.colorScheme.primary : theme.colorScheme.onSurfaceVariant,
+        color: selected
+            ? theme.colorScheme.primary
+            : theme.colorScheme.onSurfaceVariant,
       ),
-      label: Text(department),
+      label: Text(department.name(arabic)),
       showCheckmark: false,
     );
   }
