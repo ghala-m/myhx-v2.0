@@ -1,6 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:provider/provider.dart';
+
+import '../data/departments.dart';
+import '../l10n/app_strings.dart';
 import '../models/patient.dart';
+import '../services/role_service.dart';
+import '../utils/department_icons.dart';
 import '../services/database_service.dart';
 import '../utils/app_spacing.dart';
 import '../utils/app_typography.dart';
@@ -29,21 +35,24 @@ class _AddPatientScreenState extends State<AddPatientScreen> {
   String? _selectedDepartment;
   bool _isLoading = false;
 
-  final List<String> _departments = [
-    'Pediatrics',
-    'Internal Medicine',
-    'Surgery',
-    'Cardiology',
-    'General',
-  ];
+  String _deptQuery = '';
 
-  static const Map<String, IconData> _departmentIcons = {
-    'Pediatrics': Icons.child_care_rounded,
-    'Internal Medicine': Icons.monitor_heart_rounded,
-    'Surgery': Icons.medical_services_rounded,
-    'Cardiology': Icons.favorite_rounded,
-    'General': Icons.local_hospital_rounded,
-  };
+  List<Department> _visibleDepartments(BuildContext context) {
+    final role = context.watch<RoleService>();
+    final selected = role.departments;
+    var list = role.role.seesAllDepartments || selected.isEmpty
+        ? Departments.all
+        : Departments.all.where((d) => selected.contains(d.id)).toList();
+    final q = _deptQuery.trim().toLowerCase();
+    if (q.isNotEmpty) {
+      list = list
+          .where((d) =>
+              d.nameEn.toLowerCase().contains(q) || d.nameAr.contains(q))
+          .toList();
+    }
+    return list;
+  }
+
 
   final DatabaseService _dbService = DatabaseService();
 
@@ -190,10 +199,21 @@ class _AddPatientScreenState extends State<AddPatientScreen> {
                   children: [
                     _sectionTitle('Department', Icons.apartment_outlined),
                     const SizedBox(height: AppSpacing.md),
+                    TextField(
+                      decoration: const InputDecoration(
+                        hintText: 'Search departments…',
+                        prefixIcon: Icon(Icons.search_rounded, size: 20),
+                        isDense: true,
+                      ),
+                      onChanged: (v) => setState(() => _deptQuery = v),
+                    ),
+                    const SizedBox(height: AppSpacing.md),
                     Wrap(
                       spacing: AppSpacing.sm,
                       runSpacing: AppSpacing.sm,
-                      children: _departments.map(_departmentChip).toList(),
+                      children: _visibleDepartments(context)
+                          .map(_departmentChip)
+                          .toList(),
                     ),
                   ],
                 ),
@@ -347,18 +367,21 @@ class _AddPatientScreenState extends State<AddPatientScreen> {
     );
   }
 
-  Widget _departmentChip(String department) {
+  Widget _departmentChip(Department department) {
     final theme = Theme.of(context);
-    final selected = _selectedDepartment == department;
+    final arabic = S.of(context).isArabic;
+    final selected = _selectedDepartment == department.id;
     return ChoiceChip(
       selected: selected,
-      onSelected: (_) => setState(() => _selectedDepartment = department),
+      onSelected: (_) => setState(() => _selectedDepartment = department.id),
       avatar: Icon(
-        _departmentIcons[department] ?? Icons.local_hospital_rounded,
+        DepartmentIcons.resolve(department.icon),
         size: 18,
-        color: selected ? theme.colorScheme.primary : theme.colorScheme.onSurfaceVariant,
+        color: selected
+            ? theme.colorScheme.primary
+            : theme.colorScheme.onSurfaceVariant,
       ),
-      label: Text(department),
+      label: Text(department.name(arabic)),
       showCheckmark: false,
     );
   }

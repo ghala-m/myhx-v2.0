@@ -7,7 +7,9 @@ import '../l10n/app_strings.dart';
 import '../models/patient.dart';
 import '../services/database_service.dart';
 import '../utils/app_spacing.dart';
+import '../widgets/translated_text.dart';
 import 'patient_timeline_screen.dart';
+
 
 
 /// Patient record: summary, medical history and clinical AI analysis.
@@ -325,7 +327,7 @@ class _PatientRecordScreenState extends State<PatientRecordScreen> {
                           fontWeight: FontWeight.w600,
                         )),
                     const SizedBox(height: 2),
-                    Text(_stringify(e.value),
+                    TranslatedText(_stringify(e.value),
                         style: theme.textTheme.bodyMedium),
                   ],
                 ),
@@ -375,10 +377,10 @@ class _PatientRecordScreenState extends State<PatientRecordScreen> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(_stringify(f['label']),
+                                TranslatedText(_stringify(f['label']),
                                     style: theme.textTheme.bodyMedium),
                                 if (f['action'] != null)
-                                  Text(_stringify(f['action']),
+                                  TranslatedText(_stringify(f['action']),
                                       style: theme.textTheme.bodySmall),
                               ],
                             ),
@@ -411,7 +413,7 @@ class _PatientRecordScreenState extends State<PatientRecordScreen> {
                         Row(
                           children: [
                             Expanded(
-                              child: Text(_stringify(d['diagnosis']),
+                              child: TranslatedText(_stringify(d['diagnosis']),
                                   style: theme.textTheme.bodyMedium),
                             ),
                             if (pct != null)
@@ -435,7 +437,7 @@ class _PatientRecordScreenState extends State<PatientRecordScreen> {
                         if (d['rationale'] != null)
                           Padding(
                             padding: const EdgeInsets.only(top: 4),
-                            child: Text(_stringify(d['rationale']),
+                            child: TranslatedText(_stringify(d['rationale']),
                                 style: theme.textTheme.bodySmall),
                           ),
                       ],
@@ -444,7 +446,7 @@ class _PatientRecordScreenState extends State<PatientRecordScreen> {
                 }),
                 ...legacyDx.map((d) => Padding(
                       padding: const EdgeInsets.symmetric(vertical: 4),
-                      child: Text('• $d', style: theme.textTheme.bodyMedium),
+                      child: TranslatedText('• $d', style: theme.textTheme.bodyMedium),
                     )),
               ],
             ),
@@ -475,7 +477,7 @@ class _PatientRecordScreenState extends State<PatientRecordScreen> {
                           Text(_label(e.key),
                               style: theme.textTheme.labelMedium
                                   ?.copyWith(color: colors.primary)),
-                          Text(_stringify(e.value),
+                          TranslatedText(_stringify(e.value),
                               style: theme.textTheme.bodyMedium),
                         ],
                       ),
@@ -494,7 +496,7 @@ class _PatientRecordScreenState extends State<PatientRecordScreen> {
           const SizedBox(height: 8),
           ...items.map((i) => Padding(
                 padding: const EdgeInsets.symmetric(vertical: 2),
-                child: Text('• $i', style: theme.textTheme.bodyMedium),
+                child: TranslatedText('• $i', style: theme.textTheme.bodyMedium),
               )),
         ],
       );

@@ -2,6 +2,7 @@
 // lib/screens/quick_history_screen.dart
 
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../data/specialty_templates.dart';
 import '../l10n/app_strings.dart';
@@ -9,6 +10,8 @@ import '../models/patient.dart';
 import '../services/auth_service.dart';
 import '../services/clinical_ai_service.dart';
 import '../services/database_service.dart';
+import '../services/feedback_service.dart';
+import '../utils/english_input.dart';
 import '../utils/app_colors.dart';
 import '../utils/app_spacing.dart';
 import '../widgets/app_button.dart';
@@ -96,6 +99,7 @@ class _QuickHistoryScreenState extends State<QuickHistoryScreen> {
       );
 
       if (!mounted) return;
+      context.read<FeedbackService>().success();
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(
           builder: (context) =>
@@ -104,6 +108,7 @@ class _QuickHistoryScreenState extends State<QuickHistoryScreen> {
       );
     } catch (e) {
       if (mounted) {
+        context.read<FeedbackService>().error();
         setState(() => _isSaving = false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error: $e'), backgroundColor: AppColors.error),
@@ -229,6 +234,7 @@ class _QuickHistoryScreenState extends State<QuickHistoryScreen> {
         return TextField(
           controller: _controllerFor(q.id),
           keyboardType: TextInputType.number,
+          inputFormatters: EnglishInput.formatters,
           decoration: const InputDecoration(border: OutlineInputBorder()),
           onChanged: (v) => setState(() => _answers[q.id] = v),
         );
@@ -238,6 +244,7 @@ class _QuickHistoryScreenState extends State<QuickHistoryScreen> {
         return TextField(
           controller: controller,
           maxLines: isArea ? 4 : 1,
+          inputFormatters: EnglishInput.formatters,
           decoration: InputDecoration(
             border: const OutlineInputBorder(),
             suffixIcon: VoiceInputButton(
