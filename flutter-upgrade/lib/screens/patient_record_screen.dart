@@ -7,7 +7,9 @@ import '../l10n/app_strings.dart';
 import '../models/patient.dart';
 import '../services/database_service.dart';
 import '../utils/app_spacing.dart';
+import '../widgets/translated_text.dart';
 import 'patient_timeline_screen.dart';
+
 
 
 /// Patient record: summary, medical history and clinical AI analysis.
