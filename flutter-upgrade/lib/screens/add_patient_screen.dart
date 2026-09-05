@@ -29,21 +29,24 @@ class _AddPatientScreenState extends State<AddPatientScreen> {
   String? _selectedDepartment;
   bool _isLoading = false;
 
-  final List<String> _departments = [
-    'Pediatrics',
-    'Internal Medicine',
-    'Surgery',
-    'Cardiology',
-    'General',
-  ];
+  String _deptQuery = '';
 
-  static const Map<String, IconData> _departmentIcons = {
-    'Pediatrics': Icons.child_care_rounded,
-    'Internal Medicine': Icons.monitor_heart_rounded,
-    'Surgery': Icons.medical_services_rounded,
-    'Cardiology': Icons.favorite_rounded,
-    'General': Icons.local_hospital_rounded,
-  };
+  List<Department> _visibleDepartments(BuildContext context) {
+    final role = context.watch<RoleService>();
+    final selected = role.departments;
+    var list = role.role.seesAllDepartments || selected.isEmpty
+        ? Departments.all
+        : Departments.all.where((d) => selected.contains(d.id)).toList();
+    final q = _deptQuery.trim().toLowerCase();
+    if (q.isNotEmpty) {
+      list = list
+          .where((d) =>
+              d.nameEn.toLowerCase().contains(q) || d.nameAr.contains(q))
+          .toList();
+    }
+    return list;
+  }
+
 
   final DatabaseService _dbService = DatabaseService();
 
