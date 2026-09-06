@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:myhx_app/services/notification_preferences_service.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../data/departments.dart';
@@ -115,7 +116,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 child: ListView(
                   controller: controller,
                   children: [
-                    for (final group in Departments.groups.keys) ...[
+                    for (final group in Departments.groups) ...[
                       Padding(
                         padding: const EdgeInsets.fromLTRB(
                             AppSpacing.md, AppSpacing.sm, AppSpacing.md, 0),
