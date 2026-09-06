@@ -13,6 +13,7 @@ import '../services/clinical_ai_service.dart';
 import '../widgets/dynamic_question_widget.dart';
 import 'patient_record_screen.dart';
 import '../l10n/app_strings.dart';
+import '../utils/app_logger.dart';
 
 class DynamicMedicalHistoryScreen extends StatefulWidget {
   final Map<String, dynamic> patient;
@@ -140,10 +141,10 @@ class _DynamicMedicalHistoryScreenState extends State<DynamicMedicalHistoryScree
   }
 
   Future<void> _saveAndExit() async {
-    print("=== _saveAndExit START ===");
+    AppLogger.d("=== _saveAndExit START ===");
     
     if (_isSaving) {
-      print("Already saving, ignoring duplicate call");
+      AppLogger.d("Already saving, ignoring duplicate call");
       return;
     }
     
@@ -157,11 +158,11 @@ class _DynamicMedicalHistoryScreenState extends State<DynamicMedicalHistoryScree
       if (user == null) {
         throw Exception("User not logged in");
       }
-      print("User authenticated: ${user.uid}");
+      AppLogger.d("User authenticated: ${user.uid}");
 
       // جمع جميع الإجابات
       final allAnswers = _questionService.getAllAnswers();
-      print("Collected ${allAnswers.length} answers");
+      AppLogger.d("Collected ${allAnswers.length} answers");
 
       // استخراج الأعراض لتحليل الذكاء الاصطناعي
       List<String> symptoms = [];
@@ -179,7 +180,7 @@ class _DynamicMedicalHistoryScreenState extends State<DynamicMedicalHistoryScree
           }
         }
       });
-      print("Extracted ${symptoms.length} symptoms for AI analysis");
+      AppLogger.d("Extracted ${symptoms.length} symptoms for AI analysis");
 
       // إنشاء كائن المريض
       final patientObj = Patient(
@@ -207,7 +208,7 @@ class _DynamicMedicalHistoryScreenState extends State<DynamicMedicalHistoryScree
       debugPrint("Clinical analysis completed: ${clinicalAnalysis.riskLevel}");
 
       // حفظ التقرير في Firestore
-      print("Creating report in Firestore...");
+      AppLogger.d("Creating report in Firestore...");
       final reportId = await _dbService.createReport(
         doctorId: user.uid,
         patientId: widget.patient['id'] as String,
@@ -215,8 +216,24 @@ class _DynamicMedicalHistoryScreenState extends State<DynamicMedicalHistoryScree
         medicalHistory: allAnswers,
         aiAnalysis: analysisResult,
       );
-      print("Report created successfully with ID: $reportId");
-      print("=== _saveAndExit END (SUCCESS) ===");
+      AppLogger.d("Report created successfully with ID: $reportId");
+      AppLogger.d("=== _saveAndExit END (SUCCESS) ===");
+
+      // تصعيد تلقائي: لو التحليل السريري أظهر خطورة عاجلة/عالية، يضع
+      // النظام علامة "طارئ" على المريض تلقائيًا (يبقى بإمكان الطبيب
+      // إزالتها يدويًا بعد المراجعة من داخل ملف المريض).
+      if (clinicalAnalysis.riskLevel == 'Urgent' ||
+          clinicalAnalysis.riskLevel == 'High') {
+        try {
+          await _dbService.setPatientUrgent(
+            widget.patient['id'] as String,
+            true,
+            source: 'system',
+          );
+        } catch (e) {
+          AppLogger.e('Failed to auto-flag patient as urgent', error: e);
+        }
+      }
 
       // الانتقال إلى شاشة سجل المريض
       if (mounted) {
@@ -230,9 +247,9 @@ class _DynamicMedicalHistoryScreenState extends State<DynamicMedicalHistoryScree
         );
       }
     } catch (e, stackTrace) {
-      print("ERROR in _saveAndExit: $e");
-      print("Stack trace: $stackTrace");
-      print("=== _saveAndExit END (ERROR) ===");
+      AppLogger.d("ERROR in _saveAndExit: $e");
+      AppLogger.d("Stack trace: $stackTrace");
+      AppLogger.d("=== _saveAndExit END (ERROR) ===");
       
       if (mounted) {
         setState(() {

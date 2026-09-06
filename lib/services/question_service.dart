@@ -1,9 +1,10 @@
 // Enhanced Question Service with Hardcoded Questions
 // This service manages a list of hardcoded medical questions.
+// (The JSON-schema files this could optionally load from were unused dead
+// weight and have been removed — see loadMedicalHistorySchema below.)
 
-import 'dart:convert';
-import 'package:flutter/services.dart' show rootBundle;
 import '../models/question_model.dart';
+import '../utils/app_logger.dart';
 
 class EnhancedQuestionService {
   List<EnhancedQuestion> _allQuestions = [];
@@ -25,9 +26,9 @@ class EnhancedQuestionService {
         return a.displayOrder.compareTo(b.displayOrder);
       });
       
-      print('Loaded ${_allQuestions.length} questions successfully from hardcoded data');
+      AppLogger.d('Loaded ${_allQuestions.length} questions successfully from hardcoded data');
     } catch (e) {
-      print("Error loading medical history schema: $e");
+      AppLogger.d("Error loading medical history schema: $e");
       // In case of error, use hardcoded questions
       _allQuestions = _getHardcodedQuestions();
     }

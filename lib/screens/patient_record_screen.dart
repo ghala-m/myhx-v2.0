@@ -34,11 +34,40 @@ class _PatientRecordScreenState extends State<PatientRecordScreen> {
   final DatabaseService _dbService = DatabaseService();
   bool _isGeneratingPdf = false;
   late Future<Map<String, dynamic>?> _reportFuture;
+  late bool _isUrgent;
+  late String? _urgentSource;
+  bool _isTogglingUrgent = false;
 
   @override
   void initState() {
     super.initState();
     _reportFuture = _dbService.getLatestMedicalReport(widget.patient.id);
+    _isUrgent = widget.patient.isUrgent;
+    _urgentSource = widget.patient.urgentSource;
+  }
+
+  Future<void> _toggleUrgent() async {
+    final next = !_isUrgent;
+    setState(() {
+      _isUrgent = next;
+      _urgentSource = next ? 'manual' : null;
+      _isTogglingUrgent = true;
+    });
+    try {
+      await _dbService.setPatientUrgent(widget.patient.id, next);
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isUrgent = !next; // تراجع عن التغيير عند الفشل
+          _urgentSource = widget.patient.urgentSource;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isTogglingUrgent = false);
+    }
   }
 
   // ------------------------------------------------------------ safe parsing
@@ -157,6 +186,22 @@ class _PatientRecordScreenState extends State<PatientRecordScreen> {
         ),
         actions: [
           IconButton(
+            tooltip: _isUrgent ? 'Unmark urgent' : 'Mark as urgent',
+            icon: _isTogglingUrgent
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : Icon(
+                    _isUrgent
+                        ? Icons.local_fire_department_rounded
+                        : Icons.local_fire_department_outlined,
+                    color: _isUrgent ? colors.error : null,
+                  ),
+            onPressed: _isTogglingUrgent ? null : _toggleUrgent,
+          ),
+          IconButton(
             tooltip: 'Timeline & QR',
             icon: const Icon(Icons.timeline_rounded),
             onPressed: () => Navigator.of(context).push(
@@ -245,22 +290,48 @@ class _PatientRecordScreenState extends State<PatientRecordScreen> {
                   '${context.tr('ward')}: ${widget.patient.wardNumber} / ${context.tr('room')}: ${widget.patient.roomNumber}',
                   style: theme.textTheme.bodySmall,
                 ),
-                if (risk.isNotEmpty) ...[
+                if (risk.isNotEmpty || _isUrgent) ...[
                   const SizedBox(height: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 3),
-                    decoration: BoxDecoration(
-                      color: _riskColor(risk, colors).withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(
-                      '${context.tr('riskLevel')}: $risk',
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        color: _riskColor(risk, colors),
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
+                  Row(
+                    children: [
+                      if (risk.isNotEmpty) ...[
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 3),
+                          decoration: BoxDecoration(
+                            color:
+                                _riskColor(risk, colors).withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            '${context.tr('riskLevel')}: $risk',
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              color: _riskColor(risk, colors),
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                      ],
+                      if (_isUrgent)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: colors.error.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            _urgentSource == 'system'
+                                ? 'Urgent • auto-flagged'
+                                : 'Urgent • marked by you',
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              color: colors.error,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                    ],
                   ),
                 ],
               ],
