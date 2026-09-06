@@ -30,8 +30,8 @@ class _ReportsScreenState extends State<ReportsScreen> {
 
   String _riskOf(Map<String, dynamic> r) {
     final ai = r['aiAnalysis'];
-    if (ai is Map && ai['riskLevel'] is String) {
-      return (ai['riskLevel'] as String).toLowerCase();
+    if (ai is Map && ai['risk_level'] is String) {
+      return (ai['risk_level'] as String).toLowerCase();
     }
     return '';
   }

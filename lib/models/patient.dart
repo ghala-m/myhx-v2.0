@@ -15,6 +15,13 @@ class Patient {
   final String roomNumber;
   final String doctorId;
 
+  // --- وسم الحالة الطارئة ---
+  // isUrgent يجتمع فيه مصدران: تقييم الطبيب اليدوي، أو تحليل النظام
+  // السريري التلقائي بعد أخذ التاريخ المرضي (عندما تكون الخطورة
+  // Urgent/High). urgentSource يوضح مين وضع العلامة: 'manual' أو 'system'.
+  final bool isUrgent;
+  final String? urgentSource;
+
   Patient({
     required this.id,
     required this.name,
@@ -30,6 +37,8 @@ class Patient {
     required this.wardNumber,
     required this.roomNumber,
     required this.doctorId,
+    this.isUrgent = false,
+    this.urgentSource,
   });
 
   // --- دالة التحويل من JSON (مهمة لقاعدة البيانات) ---
@@ -49,6 +58,8 @@ class Patient {
       wardNumber: json['wardNumber'] ?? 'N/A',
       roomNumber: json['roomNumber'] ?? 'N/A',
       doctorId: json['doctorId'],
+      isUrgent: json['isUrgent'] ?? false,
+      urgentSource: json['urgentSource'],
     );
   }
 
@@ -69,6 +80,8 @@ class Patient {
       'wardNumber': wardNumber,
       'roomNumber': roomNumber,
       'doctorId': doctorId,
+      'isUrgent': isUrgent,
+      'urgentSource': urgentSource,
     };
   }
 
@@ -86,6 +99,9 @@ class Patient {
     String? notes,
     List<String>? symptoms,
     List<String>? diagnoses,
+    bool? isUrgent,
+    String? urgentSource,
+    bool clearUrgentSource = false,
   }) {
     return Patient(
       id: id ?? this.id,
@@ -101,6 +117,9 @@ class Patient {
       wardNumber: wardNumber ?? this.wardNumber,
       roomNumber: roomNumber ?? this.roomNumber,
       doctorId: doctorId ?? this.doctorId,
+      isUrgent: isUrgent ?? this.isUrgent,
+      urgentSource:
+          clearUrgentSource ? null : (urgentSource ?? this.urgentSource),
     );
   }
 }

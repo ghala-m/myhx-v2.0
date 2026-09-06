@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../utils/app_logger.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -16,11 +17,11 @@ class AuthService {
       );
       return result.user;
     } on FirebaseAuthException catch (e) {
-      print('Sign-in error: ${e.code} - ${e.message}');
+      AppLogger.d('Sign-in error: ${e.code} - ${e.message}');
       // Rethrow the exception to be handled in the UI
       rethrow;
     } catch (e) {
-      print('Unexpected sign-in error: $e');
+      AppLogger.d('Unexpected sign-in error: $e');
       throw FirebaseAuthException(
         code: 'unknown-error',
         message: 'An unexpected error occurred during sign-in',
@@ -56,11 +57,11 @@ class AuthService {
       
       return result.user;
     } on FirebaseAuthException catch (e) {
-      print('Sign-up error: ${e.code} - ${e.message}');
+      AppLogger.d('Sign-up error: ${e.code} - ${e.message}');
       // Rethrow the exception to be handled in the UI
       rethrow;
     } catch (e) {
-      print('Unexpected sign-up error: $e');
+      AppLogger.d('Unexpected sign-up error: $e');
       throw FirebaseAuthException(
         code: 'unknown-error',
         message: 'An unexpected error occurred during account creation',
@@ -73,7 +74,7 @@ class AuthService {
     try {
       await _auth.sendPasswordResetEmail(email: email.trim());
     } on FirebaseAuthException catch (e) {
-      print('Password reset error: ${e.code} - ${e.message}');
+      AppLogger.d('Password reset error: ${e.code} - ${e.message}');
       rethrow;
     }
   }
@@ -88,7 +89,7 @@ class AuthService {
     try {
       await _auth.signOut();
     } catch (e) {
-      print('Sign-out error: $e');
+      AppLogger.d('Sign-out error: $e');
       rethrow;
     }
   }

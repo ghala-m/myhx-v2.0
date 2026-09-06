@@ -1,6 +1,5 @@
 import 'dart:convert';
 
-import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Translates user-entered English content to Arabic on the fly.
@@ -42,47 +41,28 @@ class TranslationService {
   /// Cached translation if we already have one (synchronous, for build()).
   String? cached(String text) => _memory[text.trim()];
 
-  bool _looksArabic(String text) =>
-      RegExp(r'[\u0600-\u06FF]').hasMatch(text);
-
   /// Translate [text] to Arabic. Returns the original text on any failure.
+  ///
+  /// ⚠️ DISABLED as of this audit: this used to call the *undocumented*
+  /// Google Translate endpoint (translate.googleapis.com/translate_a/single
+  /// — the one browser extensions use, not the official paid Cloud
+  /// Translation API). That endpoint has no SLA, is against Google's ToS,
+  /// and — critically — was sending potentially patient-derived clinical
+  /// text (diagnoses, symptoms, free-text notes) to an undocumented
+  /// third-party service on every patient-record view in Arabic mode, with
+  /// no consent notice or data-processing agreement. That is not
+  /// acceptable for a clinical app, so the network call has been removed.
+  ///
+  /// [TranslatedText] still calls this and will just display the original
+  /// (English) text until this is replaced with either:
+  ///   (a) the official Cloud Translation API behind a server-side proxy
+  ///       that never receives an embedded client key, with a privacy
+  ///       notice covering this data flow, or
+  ///   (b) dropping machine translation entirely and relying only on the
+  ///       static l10n/app_strings.dart table for UI copy.
   Future<String> toArabic(String text) async {
-    final source = text.trim();
-    if (source.isEmpty || _looksArabic(source)) return text;
-    await _ensureLoaded();
-    final hit = _memory[source];
-    if (hit != null) return hit;
-
-    try {
-      final uri = Uri.https('translate.googleapis.com', '/translate_a/single', {
-        'client': 'gtx',
-        'sl': 'en',
-        'tl': 'ar',
-        'dt': 't',
-        'q': source,
-      });
-      final res = await http
-          .get(uri)
-          .timeout(const Duration(seconds: 12));
-      if (res.statusCode != 200) return text;
-      final decoded = jsonDecode(utf8.decode(res.bodyBytes));
-      if (decoded is! List || decoded.isEmpty) return text;
-      final segments = decoded.first;
-      if (segments is! List) return text;
-      final buffer = StringBuffer();
-      for (final seg in segments) {
-        if (seg is List && seg.isNotEmpty && seg.first != null) {
-          buffer.write(seg.first.toString());
-        }
-      }
-      final result = buffer.toString().trim();
-      if (result.isEmpty) return text;
-      _memory[source] = result;
-      await _save();
-      return result;
-    } catch (_) {
-      return text;
-    }
+    // Network call intentionally removed — see doc comment above.
+    return text;
   }
 
   /// Translate a batch of strings, preserving order.

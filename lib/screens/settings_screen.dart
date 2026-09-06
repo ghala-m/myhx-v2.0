@@ -8,7 +8,6 @@ import '../services/auth_service.dart';
 import '../services/database_service.dart';
 import '../services/feedback_service.dart';
 import '../services/role_service.dart';
-import '../services/translation_service.dart';
 import '../utils/app_colors.dart';
 import '../utils/app_spacing.dart';
 import '../utils/app_themes.dart';
@@ -33,7 +32,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Doctor? _doctorProfile;
   bool _isLoadingProfile = true;
-  bool _notificationsEnabled = true;
 
   @override
   void initState() {
@@ -125,7 +123,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             style: AppTypography.caption(ctx)
                                 .copyWith(letterSpacing: 1)),
                       ),
-                      for (final d in Departments.groups[group]!)
+                      for (final d in Departments.byGroup(group))
                         CheckboxListTile(
                           value: selected.contains(d.id),
                           title: Text(d.name(arabic)),
@@ -219,26 +217,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   _languageTile('English', 'en', localeProvider),
                   _divider(),
                   _languageTile('العربية', 'ar', localeProvider),
-                  _divider(),
-                  _tile(
-                    icon: Icons.translate_rounded,
-                    title: arabic ? 'الترجمة التلقائية' : 'Automatic translation',
-                    subtitle: arabic
-                        ? 'الإدخال بالإنجليزية فقط، والعرض بالعربية يُترجم تلقائياً'
-                        : 'Data entry is English-only; Arabic is generated automatically',
-                    trailing: TextButton(
-                      onPressed: () async {
-                        await TranslationService.instance.clearCache();
-                        if (!mounted) return;
-                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                          content: Text(arabic
-                              ? 'تم مسح ذاكرة الترجمة'
-                              : 'Translation cache cleared'),
-                        ));
-                      },
-                      child: Text(arabic ? 'مسح الذاكرة' : 'Clear cache'),
-                    ),
-                  ),
                 ],
               ),
             ),
@@ -378,13 +356,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 children: [
                   _tile(
                     icon: Icons.notifications_outlined,
-                    title: arabic ? 'الإشعارات' : 'Notifications',
+                    title: arabic ? 'تنبيهات الحالات الحرجة' : 'Urgent case alerts',
                     subtitle: arabic
-                        ? 'تذكير بالتواريخ المرضية غير المكتملة'
-                        : 'Reminders for pending histories',
+                        ? 'إظهار تنبيه بالرئيسية عند وجود مريض بخطورة عالية'
+                        : 'Show a home-screen banner when a patient is flagged high risk',
                     trailing: Switch(
-                      value: _notificationsEnabled,
-                      onChanged: (v) => setState(() => _notificationsEnabled = v),
+                      value: context.watch<NotificationPreferencesService>().isEnabled,
+                      onChanged: (v) =>
+                          context.read<NotificationPreferencesService>().setEnabled(v),
                     ),
                   ),
                   _divider(),
@@ -392,9 +371,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     icon: Icons.privacy_tip_outlined,
                     title: arabic ? 'الخصوصية والبيانات' : 'Privacy & data',
                     subtitle: arabic
-                        ? 'بيانات المرضى مشفّرة داخل حسابك'
-                        : 'Patient data stays encrypted in your account',
+                        ? 'كيف تُخزَّن وتُحمى بيانات مرضاك'
+                        : 'How your patients\' data is stored and protected',
                     trailing: const Icon(Icons.chevron_right_rounded),
+                    onTap: () => showDialog(
+                      context: context,
+                      builder: (ctx) => AlertDialog(
+                        title: Text(arabic ? 'الخصوصية والبيانات' : 'Privacy & data'),
+                        content: Text(
+                          arabic
+                              ? 'بيانات مرضاك مخزّنة في حسابك على Firebase، ومحصورة بك أنت فقط — لا يستطيع أي طبيب أو طالب آخر الوصول إليها. لا يُرسَل أي نص من سجلات المرضى لأي خدمة ذكاء اصطناعي أو ترجمة خارجية؛ التحليل السريري يعمل بالكامل محليًا على جهازك.'
+                              : 'Your patients\' data is stored in your Firebase account and scoped to you alone — no other doctor or student can access it. No patient-record text is sent to any external AI or translation service; clinical analysis runs entirely on your device.',
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.of(ctx).pop(),
+                            child: Text(context.tr('cancel')),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
                   _divider(),
                   _tile(

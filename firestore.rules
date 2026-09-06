@@ -1,0 +1,100 @@
+rules_version = '2';
+
+// =============================================================================
+// myhx- Firestore Security Rules
+// =============================================================================
+// Collections:
+//   /users/{uid}                          -> account profile + `role` field
+//                                             (student | doctor | developer)
+//   /patients/{patientId}                 -> patient record, has `doctorId`
+//   /patients/{patientId}/reports/{id}    -> medical history / AI analysis
+//   /question_bank/{departmentId}         -> developer-authored questions,
+//                                             read by every doctor/student
+//
+// This file is the actual security boundary. Everything role_service.dart
+// and question_bank_service.dart check in Dart is a UX convenience for
+// hiding buttons — it is NOT enforcement, because any client can call
+// Firestore directly. Without the rules below:
+//   1. Any signed-in user could write role: 'developer' to their own
+//      /users/{uid} doc directly, which the app would then legitimately
+//      read back and treat as real — full privilege escalation with one
+//      Firestore write, no app bug required.
+//   2. Any signed-in user could write directly to /question_bank/*, which
+//      is served to every doctor and student as clinical question content.
+// =============================================================================
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    // A user is a developer if *their own, currently stored* profile says so.
+    // Always reads the server's copy — never the incoming request data —
+    // so a user cannot grant themselves developer by simply including it
+    // in the write they are trying to make.
+    function isDeveloper() {
+      return isSignedIn() &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'developer';
+    }
+
+    function isOwnerOfPatient(patientId) {
+      return isSignedIn() &&
+        get(/databases/$(database)/documents/patients/$(patientId)).data.doctorId == request.auth.uid;
+    }
+
+    // Did this write attempt to introduce or change the 'role' field?
+    function roleFieldChanged() {
+      return ('role' in request.resource.data) &&
+        (!('role' in resource.data) || request.resource.data.role != resource.data.role);
+    }
+
+    // ---- users/{uid} ----
+    match /users/{uid} {
+      // A user can always read their own profile. Developers can read any
+      // profile (needed for the Roles & permissions admin screen).
+      allow read: if isSignedIn() && (request.auth.uid == uid || isDeveloper());
+
+      // Account creation at sign-up: a user may create their own doc, but
+      // may not hand themselves a role above the default 'student'.
+      allow create: if isSignedIn() && request.auth.uid == uid &&
+        (!('role' in request.resource.data) || request.resource.data.role == 'student');
+
+      // A user may update their own profile (name, department picks, theme,
+      // etc.) as long as the write does NOT touch 'role' — OR they are
+      // already a real developer (self-service role changes are still
+      // gated in the app's UI, but this also allows a developer to grant
+      // roles to *other* users' documents).
+      allow update: if isSignedIn() &&
+        ((request.auth.uid == uid && !roleFieldChanged()) || isDeveloper());
+
+      allow delete: if false;
+    }
+
+    // ---- patients/{patientId} ----
+    match /patients/{patientId} {
+      allow create: if isSignedIn() && request.resource.data.doctorId == request.auth.uid;
+      allow read, update, delete: if isSignedIn() && resource.data.doctorId == request.auth.uid;
+
+      match /reports/{reportId} {
+        allow create: if isOwnerOfPatient(patientId) &&
+                          request.resource.data.doctorId == request.auth.uid;
+        allow read, update, delete: if isOwnerOfPatient(patientId);
+      }
+    }
+
+    // ---- question_bank/{departmentId} ----
+    // Every signed-in user (doctor/student) reads the merged question set;
+    // only developers may author/hide questions.
+    match /question_bank/{departmentId} {
+      allow read: if isSignedIn();
+      allow write: if isDeveloper();
+    }
+
+    // Deny everything else by default.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

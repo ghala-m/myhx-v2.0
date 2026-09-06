@@ -13,11 +13,13 @@ import '../services/database_service.dart';
 import '../services/feedback_service.dart';
 import '../utils/english_input.dart';
 import '../utils/app_colors.dart';
+import '../utils/app_logger.dart';
 import '../utils/app_spacing.dart';
 import '../widgets/app_button.dart';
 import '../widgets/app_card.dart';
 import '../widgets/voice_input_button.dart';
 import 'patient_record_screen.dart';
+import 'history_mode_screen.dart';
 
 class QuickHistoryScreen extends StatefulWidget {
   final Patient patient;
@@ -98,6 +100,16 @@ class _QuickHistoryScreenState extends State<QuickHistoryScreen> {
         aiAnalysis: analysis.toJson(),
       );
 
+      // تصعيد تلقائي: لو التحليل السريري أظهر خطورة عاجلة/عالية، يضع
+      // النظام علامة "طارئ" على المريض تلقائيًا.
+      if (analysis.riskLevel == 'Urgent' || analysis.riskLevel == 'High') {
+        try {
+          await _db.setPatientUrgent(widget.patient.id, true, source: 'system');
+        } catch (e) {
+          AppLogger.e('Failed to auto-flag patient as urgent', error: e);
+        }
+      }
+
       if (!mounted) return;
       context.read<FeedbackService>().success();
       Navigator.of(context).pushReplacement(
@@ -124,7 +136,20 @@ class _QuickHistoryScreenState extends State<QuickHistoryScreen> {
     final total = widget.template.questions.length;
 
     return Scaffold(
-      appBar: AppBar(title: Text(widget.template.name(arabic))),
+      appBar: AppBar(
+        title: Text(widget.template.name(arabic)),
+        actions: [
+          IconButton(
+            tooltip: arabic ? 'تغيير مجموعة الأسئلة' : 'Change question set',
+            icon: const Icon(Icons.tune_rounded),
+            onPressed: () => Navigator.of(context).pushReplacement(
+              MaterialPageRoute(
+                builder: (_) => HistoryModeScreen(patient: widget.patient),
+              ),
+            ),
+          ),
+        ],
+      ),
       body: ListView(
         padding: const EdgeInsets.all(AppSpacing.md),
         children: [

@@ -18,7 +18,7 @@ class DepartmentQuestions {
     TemplateQuestion(id: 'systems', en: 'Systemic review', ar: 'مراجعة الأجهزة', type: 'textarea'),
   ];
 
-  static const Map<String, List<TemplateQuestion>> byDepartment = {
+  static Map<String, List<TemplateQuestion>> byDepartment = {
     'cardiology': [
       TemplateQuestion(id: 'chest_pain', en: 'Chest pain — site, radiation, character', ar: 'ألم الصدر — الموقع، الانتشار، الطبيعة', type: 'textarea', critical: true),
       TemplateQuestion(id: 'exertional', en: 'Worse on exertion?', ar: 'يزداد مع المجهود؟', type: 'boolean', critical: true),
@@ -291,7 +291,7 @@ class DepartmentQuestions {
       TemplateQuestion(id: 'interactions', en: 'Known interactions or side effects', ar: 'تداخلات أو أعراض جانبية معروفة', type: 'textarea', critical: true),
       TemplateQuestion(id: 'renal_dose', en: 'Renal / hepatic dose adjustment needed?', ar: 'حاجة لتعديل الجرعة كلوياً أو كبدياً؟', type: 'boolean'),
     ],
-  ];
+  };
 
   static List<TemplateQuestion> forDepartment(String id) =>
       byDepartment[id] ?? generic;

@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:provider/provider.dart';
 import 'package:myhx_app/screens/login_screen.dart'; // تم تصحيح المسار
-import 'package:myhx_app/screens/dashboard_screen.dart'; // تم تصحيح المسار
+import 'package:myhx_app/screens/main_shell.dart';
 import 'package:myhx_app/services/auth_service.dart'; // تم تصحيح المسار
 
 class AuthWrapper extends StatelessWidget {
@@ -21,7 +21,7 @@ class AuthWrapper extends StatelessWidget {
         }
         if (snapshot.hasData) {
           // المستخدم مسجل للدخول
-          return const DashboardScreen();
+          return const MainShell();
         } else {
           // المستخدم غير مسجل للدخول
           return const LoginScreen();

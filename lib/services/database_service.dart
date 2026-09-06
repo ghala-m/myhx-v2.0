@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/patient.dart'; // استيراد نموذج المريض
+import '../utils/app_logger.dart';
 
 class DatabaseService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance; // تصحيح: استخدام FirebaseFirestore.instance
@@ -17,7 +18,7 @@ class DatabaseService {
       await docRef.update({'id': docRef.id});
       return docRef.id;
     } catch (e) {
-      print('Error adding patient: $e');
+      AppLogger.d('Error adding patient: $e');
       rethrow;
     }
   }
@@ -35,7 +36,7 @@ class DatabaseService {
         return Patient.fromJson(doc.data() as Map<String, dynamic>);
       }).toList();
     } catch (e) {
-      print('Error getting patients: $e');
+      AppLogger.d('Error getting patients: $e');
       return []; // إرجاع قائمة فارغة في حال حدوث خطأ
     }
   }
@@ -48,7 +49,27 @@ class DatabaseService {
     try {
       await _patientsCollection.doc(patientId).update(dataToUpdate);
     } catch (e) {
-      print('Error updating patient: $e');
+      AppLogger.d('Error updating patient: $e');
+      rethrow;
+    }
+  }
+
+  // --- دالة لوضع/إزالة وسم "طارئ" على مريض ---
+  // source: 'manual' عند تقييم الطبيب اليدوي، أو 'system' عند التصعيد
+  // التلقائي بعد تحليل سريري بخطورة Urgent/High. عند الإزالة اليدوية
+  // (value=false) يُمسح المصدر أيضًا.
+  Future<void> setPatientUrgent(
+    String patientId,
+    bool value, {
+    String source = 'manual',
+  }) async {
+    try {
+      await _patientsCollection.doc(patientId).update({
+        'isUrgent': value,
+        'urgentSource': value ? source : null,
+      });
+    } catch (e) {
+      AppLogger.e('Error setting patient urgent flag', error: e);
       rethrow;
     }
   }
@@ -58,7 +79,7 @@ class DatabaseService {
     try {
       await _patientsCollection.doc(patientId).delete();
     } catch (e) {
-      print('Error deleting patient: $e');
+      AppLogger.d('Error deleting patient: $e');
       rethrow;
     }
   }
@@ -71,14 +92,14 @@ class DatabaseService {
     Map<String, dynamic>? aiAnalysis,
     required Patient patient,
   }) async {
-    print("=== createReport START ===");
-    print("Doctor ID: $doctorId");
-    print("Patient ID: $patientId");
-    print("Patient Name: ${patient.name}");
+    AppLogger.d("=== createReport START ===");
+    AppLogger.d("Doctor ID: $doctorId");
+    AppLogger.d("Patient ID: $patientId");
+    AppLogger.d("Patient Name: ${patient.name}");
     
     // التحقق من صحة patientId
     if (patientId.isEmpty) {
-      print("ERROR: patientId is empty!");
+      AppLogger.d("ERROR: patientId is empty!");
       throw Exception("Patient ID cannot be empty");
     }
     
@@ -86,10 +107,10 @@ class DatabaseService {
       // التحقق من وجود المريض أولاً
       final patientDoc = await _patientsCollection.doc(patientId).get();
       if (!patientDoc.exists) {
-        print("ERROR: Patient document does not exist for patientId: $patientId");
+        AppLogger.d("ERROR: Patient document does not exist for patientId: $patientId");
         throw Exception("Patient not found in database");
       }
-      print("Patient document exists, proceeding with report creation...");
+      AppLogger.d("Patient document exists, proceeding with report creation...");
       
       final reportRef = _patientsCollection
           .doc(patientId)
@@ -97,10 +118,10 @@ class DatabaseService {
           .doc();
       final reportId = reportRef.id;
 
-      print('Creating report with ID: $reportId');
-      print('Medical History keys: ${medicalHistory.keys.toList()}');
-      print('Medical History values count: ${medicalHistory.length}');
-      print('AI Analysis: ${aiAnalysis != null ? "Present" : "Null"}');
+      AppLogger.d('Creating report with ID: $reportId');
+      AppLogger.d('Medical History keys: ${medicalHistory.keys.toList()}');
+      AppLogger.d('Medical History values count: ${medicalHistory.length}');
+      AppLogger.d('AI Analysis: ${aiAnalysis != null ? "Present" : "Null"}');
       
       final reportData = {
         "reportId": reportId,
@@ -111,15 +132,15 @@ class DatabaseService {
         "createdAt": FieldValue.serverTimestamp(),
       };
 
-      print("Writing report to Firestore...");
+      AppLogger.d("Writing report to Firestore...");
       await reportRef.set(reportData);
-      print("Report created successfully!");
-      print("=== createReport END (SUCCESS) ===");
+      AppLogger.d("Report created successfully!");
+      AppLogger.d("=== createReport END (SUCCESS) ===");
       return reportId;
     } catch (e, stackTrace) {
-      print("ERROR in createReport: $e");
-      print("Stack trace: $stackTrace");
-      print("=== createReport END (ERROR) ===");
+      AppLogger.d("ERROR in createReport: $e");
+      AppLogger.d("Stack trace: $stackTrace");
+      AppLogger.d("=== createReport END (ERROR) ===");
       rethrow;
     }
   }
@@ -134,19 +155,19 @@ class DatabaseService {
       }
       return null;
     } catch (e) {
-      print("Error getting medical report by ID: $e");
+      AppLogger.d("Error getting medical report by ID: $e");
       return null;
     }
   }
 
   // --- دالة لجلب أحدث تقرير طبي لمريض معين (جديدة) ---
   Future<Map<String, dynamic>?> getLatestMedicalReport(String patientId) async {
-    print("=== getLatestMedicalReport START ===");
-    print("Attempting to get latest medical report for patientId: $patientId");
+    AppLogger.d("=== getLatestMedicalReport START ===");
+    AppLogger.d("Attempting to get latest medical report for patientId: $patientId");
     
     // التحقق من صحة patientId
     if (patientId.isEmpty) {
-      print("ERROR: patientId is empty!");
+      AppLogger.d("ERROR: patientId is empty!");
       return null;
     }
     
@@ -154,100 +175,102 @@ class DatabaseService {
       // التحقق من وجود المريض أولاً
       final patientDoc = await _patientsCollection.doc(patientId).get();
       if (!patientDoc.exists) {
-        print("ERROR: Patient document does not exist for patientId: $patientId");
+        AppLogger.d("ERROR: Patient document does not exist for patientId: $patientId");
         return null;
       }
-      print("Patient document exists: ${patientDoc.data()}");
+      AppLogger.d("Patient document exists: ${patientDoc.data()}");
       
       // جلب التقارير
       final reportsCollection = _patientsCollection
           .doc(patientId)
           .collection('reports');
       
-      print("Querying reports collection...");
+      AppLogger.d("Querying reports collection...");
       final querySnapshot = await reportsCollection
           .orderBy('createdAt', descending: true)
           .limit(1)
           .get();
 
-      print("Query completed. Number of documents found: ${querySnapshot.docs.length}");
+      AppLogger.d("Query completed. Number of documents found: ${querySnapshot.docs.length}");
       
       if (querySnapshot.docs.isNotEmpty) {
         final reportData = querySnapshot.docs.first.data();
-        print("Found latest medical report for patientId: $patientId");
-        print("Report ID: ${querySnapshot.docs.first.id}");
-        print("Report data keys: ${reportData.keys.toList()}");
-        print("Medical History exists: ${reportData.containsKey('medicalHistory')}");
-        print("AI Analysis exists: ${reportData.containsKey('aiAnalysis')}");
+        AppLogger.d("Found latest medical report for patientId: $patientId");
+        AppLogger.d("Report ID: ${querySnapshot.docs.first.id}");
+        AppLogger.d("Report data keys: ${reportData.keys.toList()}");
+        AppLogger.d("Medical History exists: ${reportData.containsKey('medicalHistory')}");
+        AppLogger.d("AI Analysis exists: ${reportData.containsKey('aiAnalysis')}");
         
         // التحقق من وجود البيانات المطلوبة
         if (!reportData.containsKey('medicalHistory') && !reportData.containsKey('aiAnalysis')) {
-          print("WARNING: Report exists but contains no medicalHistory or aiAnalysis");
+          AppLogger.d("WARNING: Report exists but contains no medicalHistory or aiAnalysis");
         }
         
-        print("=== getLatestMedicalReport END (SUCCESS) ===");
+        AppLogger.d("=== getLatestMedicalReport END (SUCCESS) ===");
         return reportData;
       }
       
-      print("No reports found for patientId: $patientId");
-      print("=== getLatestMedicalReport END (NO DATA) ===");
+      AppLogger.d("No reports found for patientId: $patientId");
+      AppLogger.d("=== getLatestMedicalReport END (NO DATA) ===");
       return null; // لا يوجد تقرير لهذا المريض
     } catch (e, stackTrace) {
-      print("ERROR in getLatestMedicalReport for patientId: $patientId");
-      print("Error: $e");
-      print("Stack trace: $stackTrace");
-      print("=== getLatestMedicalReport END (ERROR) ===");
+      AppLogger.d("ERROR in getLatestMedicalReport for patientId: $patientId");
+      AppLogger.d("Error: $e");
+      AppLogger.d("Stack trace: $stackTrace");
+      AppLogger.d("=== getLatestMedicalReport END (ERROR) ===");
       return null;
     }
   }
 
   // --- دالة لجلب التقارير الخاصة بطبيب معين ---
+  // --- دالة لجلب التقارير الخاصة بطبيب معين (مع بيانات المريض مدمجة) ---
+  //
+  // ملاحظة أداء: كل تقرير يُخزَّن أصلاً وعليه حقل 'doctorId'، لذلك نستخدم
+  // collectionGroup query واحد لكل التقارير + استعلام واحد لكل مرضى الطبيب،
+  // ثم نربطهما في الذاكرة. المجموع: استعلامان ثابتان بغض النظر عن عدد
+  // المرضى — بدلاً من النمط القديم (استعلام لكل مرضى الطبيب) + (استعلام
+  // منفصل لكل مريض على حدة لتقاريره)، وهو نمط N+1 كان يبطئ الأداء ويرفع
+  // تكلفة قراءات Firestore مع نمو عدد المرضى.
+  // يتطلب هذا فهرسًا مركّبًا على مجموعة 'reports' (doctorId ASC,
+  // createdAt DESC) — راجع firestore.indexes.json.
   Stream<List<Map<String, dynamic>>> getReportsForDoctor(String doctorId) {
-    // هذا الاستعلام يجلب التقارير مباشرة من جميع المرضى التابعين للطبيب
-    // يتطلب أن يكون هناك حقل 'doctorId' في كل تقرير لتصفية فعالة
-    return _patientsCollection
+    final reportsStream = _firestore
+        .collectionGroup('reports')
         .where('doctorId', isEqualTo: doctorId)
-        .snapshots()
-        .asyncMap((patientSnapshot) async {
-          List<Map<String, dynamic>> allReports = [];
-          for (var doc in patientSnapshot.docs) {
-            final patientId = doc.id;
-            final reportsSnapshot = await _patientsCollection
-                .doc(patientId)
-                .collection("reports")
-                .orderBy("createdAt", descending: true)
-                .get();
-            final patientData = doc.data() as Map<String, dynamic>;
-            for (var reportDoc in reportsSnapshot.docs) {
-              allReports.add({
-                ...reportDoc.data(),
-                'reportId': reportDoc.id,
-                'patientId': patientId,
-                'patientName': patientData['name'] ?? '',
-                'patientAge': patientData['age'],
-                'patientGender': patientData['gender'] ?? '',
-                'patientDepartment': patientData['department'] ?? '',
-                'patientData': patientData,
-              });
-            }
-          }
-          // Sort all reports by createdAt descending
-          allReports.sort((a, b) {
-            final aTime =
-                (a["createdAt"] as Timestamp?)?.toDate() ?? DateTime(0);
-            final bTime =
-                (b["createdAt"] as Timestamp?)?.toDate() ?? DateTime(0);
-            return bTime.compareTo(aTime);
-          });
-          return allReports;
-        });
+        .orderBy('createdAt', descending: true)
+        .snapshots();
+
+    return reportsStream.asyncMap((snapshot) async {
+      final patientsSnapshot =
+          await _patientsCollection.where('doctorId', isEqualTo: doctorId).get();
+      final patientsById = {
+        for (final doc in patientsSnapshot.docs)
+          doc.id: doc.data() as Map<String, dynamic>
+      };
+
+      return snapshot.docs.map((doc) {
+        final data = doc.data();
+        final patientId = doc.reference.parent.parent?.id ?? '';
+        final patientData = patientsById[patientId];
+        return {
+          ...data,
+          'reportId': doc.id,
+          'patientId': patientId,
+          'patientName': patientData?['name'] ?? '',
+          'patientAge': patientData?['age'],
+          'patientGender': patientData?['gender'] ?? '',
+          'patientDepartment': patientData?['department'] ?? '',
+          'patientData': patientData,
+        };
+      }).toList();
+    });
   }
 
   // --- دالة لجلب بروفايل الطبيب ---
   Future<Map<String, dynamic>?> getDoctorProfile(String uid) async {
     try {      final doc = await _firestore.collection('users').doc(uid).get();      return doc.data();
     } catch (e) {
-      print(e);
+      AppLogger.d(e);
       return null;
     }
   }

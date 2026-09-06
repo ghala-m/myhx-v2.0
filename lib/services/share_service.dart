@@ -5,6 +5,7 @@ import 'package:printing/printing.dart';
 import 'package:path_provider/path_provider.dart';
 import '../models/patient.dart';
 import 'pdf_service.dart';
+import '../utils/app_logger.dart';
 
 class ShareService {
   static final ShareService _instance = ShareService._internal();
@@ -318,7 +319,7 @@ Future<File?> _generatePdfWithLoading(
         }
       }
     } catch (e) {
-      print('Error cleaning up old reports: $e');
+      AppLogger.d('Error cleaning up old reports: $e');
     }
   }
 }

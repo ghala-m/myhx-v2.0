@@ -8,6 +8,7 @@ import 'auth_wrapper.dart';
 import 'services/auth_service.dart';
 import 'services/offline_service.dart';
 import 'services/feedback_service.dart';
+import 'services/notification_preferences_service.dart';
 import 'services/role_service.dart';
 import 'utils/theme_provider.dart';
 import 'utils/locale_provider.dart';
@@ -32,6 +33,9 @@ void main() async {
   final roleService = RoleService();
   await roleService.load();
 
+  final notificationPrefs = NotificationPreferencesService();
+  await notificationPrefs.load();
+
   final offlineService = OfflineService();
   await offlineService.init();
 
@@ -43,6 +47,7 @@ void main() async {
         ChangeNotifierProvider.value(value: offlineService),
         ChangeNotifierProvider.value(value: feedbackService),
         ChangeNotifierProvider.value(value: roleService),
+        ChangeNotifierProvider.value(value: notificationPrefs),
         Provider<AuthService>(create: (_) => AuthService()),
       ],
       child: const MyHxApp(),
