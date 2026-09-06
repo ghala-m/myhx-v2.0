@@ -4,6 +4,7 @@
 import 'dart:convert';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:qr_flutter/qr_flutter.dart';
@@ -110,10 +111,14 @@ class PatientTimelineScreen extends StatelessWidget {
             );
           }
 
-          return ListView.builder(
-            padding: const EdgeInsets.all(AppSpacing.md),
-            itemCount: reports.length,
-            itemBuilder: (context, index) {
+          return Column(
+            children: [
+              if (reports.length >= 2) _trendChart(context, reports, arabic),
+              Expanded(
+                child: ListView.builder(
+                  padding: const EdgeInsets.all(AppSpacing.md),
+                  itemCount: reports.length,
+                  itemBuilder: (context, index) {
               final report = reports[index];
               final ai = (report['aiAnalysis'] as Map?)?.cast<String, dynamic>() ?? {};
               final risk = (ai['risk_level'] as String?) ?? 'Low';
@@ -208,11 +213,146 @@ class PatientTimelineScreen extends StatelessWidget {
                   ],
                 ),
               );
-            },
+                  },
+                ),
+              ),
+            ],
           );
         },
       ),
     );
+  }
+
+  Widget _trendChart(
+      BuildContext context, List<Map<String, dynamic>> reportsDesc, bool arabic) {
+    // reportsDesc is newest-first (matches the timeline list below);
+    // the chart reads left-to-right chronologically, so reverse it.
+    final chronological = reportsDesc.reversed.toList();
+    final spots = <FlSpot>[];
+    for (var i = 0; i < chronological.length; i++) {
+      final ai = (chronological[i]['aiAnalysis'] as Map?)?.cast<String, dynamic>() ?? {};
+      final risk = (ai['risk_level'] as String?) ?? 'Low';
+      spots.add(FlSpot(i.toDouble(), _riskScore(risk)));
+    }
+
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+          AppSpacing.md, AppSpacing.md, AppSpacing.md, 0),
+      child: AppCard(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              arabic ? 'تطور الخطورة عبر الزيارات' : 'Risk trend across visits',
+              style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            SizedBox(
+              height: 140,
+              child: LineChart(
+                LineChartData(
+                  minY: 0.5,
+                  maxY: 4.5,
+                  gridData: const FlGridData(show: false),
+                  borderData: FlBorderData(show: false),
+                  titlesData: FlTitlesData(
+                    topTitles: const AxisTitles(
+                        sideTitles: SideTitles(showTitles: false)),
+                    rightTitles: const AxisTitles(
+                        sideTitles: SideTitles(showTitles: false)),
+                    bottomTitles: const AxisTitles(
+                        sideTitles: SideTitles(showTitles: false)),
+                    leftTitles: AxisTitles(
+                      sideTitles: SideTitles(
+                        showTitles: true,
+                        reservedSize: 60,
+                        interval: 1,
+                        getTitlesWidget: (value, meta) {
+                          const labels = {
+                            1: 'Low',
+                            2: 'Medium',
+                            3: 'High',
+                            4: 'Urgent',
+                          };
+                          final label = labels[value.round()];
+                          if (label == null || value != value.roundToDouble()) {
+                            return const SizedBox.shrink();
+                          }
+                          return Text(label,
+                              style: theme.textTheme.labelSmall);
+                        },
+                      ),
+                    ),
+                  ),
+                  lineTouchData: LineTouchData(
+                    touchTooltipData: LineTouchTooltipData(
+                      getTooltipItems: (touchedSpots) => touchedSpots.map((s) {
+                        final date =
+                            (chronological[s.x.toInt()]['createdAt'] as Timestamp?)
+                                ?.toDate();
+                        return LineTooltipItem(
+                          date != null
+                              ? DateFormat('dd MMM').format(date)
+                              : '',
+                          theme.textTheme.labelSmall ?? const TextStyle(),
+                        );
+                      }).toList(),
+                    ),
+                  ),
+                  lineBarsData: [
+                    LineChartBarData(
+                      spots: spots,
+                      isCurved: false,
+                      color: theme.colorScheme.primary,
+                      barWidth: 2.5,
+                      dotData: FlDotData(
+                        getDotPainter: (spot, percent, bar, index) =>
+                            FlDotCirclePainter(
+                          radius: 4,
+                          color: riskColor(_scoreToRisk(spot.y)),
+                          strokeWidth: 0,
+                        ),
+                      ),
+                      belowBarData: BarAreaData(
+                        show: true,
+                        color: theme.colorScheme.primary.withValues(alpha: 0.08),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  double _riskScore(String risk) {
+    switch (risk) {
+      case 'Urgent':
+        return 4;
+      case 'High':
+        return 3;
+      case 'Medium':
+        return 2;
+      default:
+        return 1;
+    }
+  }
+
+  String _scoreToRisk(double score) {
+    switch (score.round()) {
+      case 4:
+        return 'Urgent';
+      case 3:
+        return 'High';
+      case 2:
+        return 'Medium';
+      default:
+        return 'Low';
+    }
   }
 
   String _summary(Map<String, dynamic> ai, bool arabic) {
