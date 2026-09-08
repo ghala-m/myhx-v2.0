@@ -1,8 +1,12 @@
+import 'dart:async';
+
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../models/app_role.dart';
 import '../services/feedback_service.dart';
+import '../services/push_notification_service.dart';
 import '../services/role_service.dart';
 import '../utils/app_spacing.dart';
 import '../utils/app_typography.dart';
@@ -11,6 +15,7 @@ import '../widgets/offline_banner.dart';
 import 'add_patient_screen.dart';
 import 'analytics_screen.dart';
 import 'home_tab.dart';
+import 'learn_tab.dart';
 import 'patients_tab.dart';
 import 'settings_screen.dart';
 
@@ -29,6 +34,34 @@ class _MainShellState extends State<MainShell> {
   int _index = 0;
   final _homeKey = GlobalKey<HomeTabState>();
   final _patientsKey = GlobalKey<PatientsTabState>();
+  StreamSubscription<RemoteMessage>? _fcmSubscription;
+
+  @override
+  void initState() {
+    super.initState();
+    // Android/iOS don't show a system notification for messages that
+    // arrive while the app is already open — show an in-app banner
+    // instead so foreground users still see urgent flags/mentor feedback.
+    _fcmSubscription =
+        PushNotificationService.instance.onForegroundMessage.listen((message) {
+      if (!mounted) return;
+      final title = message.notification?.title;
+      final body = message.notification?.body;
+      if (title == null && body == null) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text([title, body].whereType<String>().join(' — ')),
+          duration: const Duration(seconds: 5),
+        ),
+      );
+    });
+  }
+
+  @override
+  void dispose() {
+    _fcmSubscription?.cancel();
+    super.dispose();
+  }
 
   void _goToPatients() {
     context.read<FeedbackService>().tap();
@@ -55,7 +88,7 @@ class _MainShellState extends State<MainShell> {
     final pages = [
       HomeTab(key: _homeKey, onSeeAllPatients: _goToPatients),
       PatientsTab(key: _patientsKey),
-      const AnalyticsScreen(),
+      isDoctor ? const AnalyticsScreen() : const LearnTab(),
       const SettingsScreen(),
     ];
 

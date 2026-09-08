@@ -9,6 +9,7 @@ import '../utils/app_spacing.dart';
 import '../widgets/app_card.dart';
 import '../widgets/offline_banner.dart';
 import '../l10n/app_strings.dart';
+import 'review_queue_screen.dart';
 
 class AnalyticsScreen extends StatefulWidget {
   const AnalyticsScreen({super.key});
@@ -57,7 +58,18 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     final theme = Theme.of(context);
 
     return Scaffold(
-      appBar: AppBar(title: Text(context.tr('analytics'))),
+      appBar: AppBar(
+        title: Text(context.tr('analytics')),
+        actions: [
+          IconButton(
+            tooltip: 'Review queue',
+            icon: const Icon(Icons.forum_outlined),
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const ReviewQueueScreen()),
+            ),
+          ),
+        ],
+      ),
       body: Column(
         children: [
           const OfflineBanner(),

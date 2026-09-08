@@ -7,6 +7,8 @@ import '../models/doctor.dart';
 import '../services/auth_service.dart';
 import '../services/database_service.dart';
 import '../services/feedback_service.dart';
+import '../services/notification_preferences_service.dart';
+import '../services/push_notification_service.dart';
 import '../services/role_service.dart';
 import '../utils/app_colors.dart';
 import '../utils/app_spacing.dart';
@@ -77,6 +79,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ),
     );
     if (confirmed == true) {
+      await PushNotificationService.instance.removeCurrentToken();
       await _authService.signOut();
     }
   }

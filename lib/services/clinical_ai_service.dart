@@ -1,4 +1,7 @@
+import 'dart:math';
+
 import '../models/patient.dart';
+import '../models/quiz_question.dart';
 
 /// Structured output of a clinical reasoning pass.
 class ClinicalAnalysis {
@@ -532,4 +535,74 @@ class ClinicalAIService {
       .replaceAll('_', ' ')
       .replaceAllMapped(RegExp(r'([a-z])([A-Z])'), (m) => '${m[1]} ${m[2]}')
       .trim();
+
+  // ---------------------------------------------------------------------
+  // Self-review quiz, generated from the exact same rule tables the live
+  // clinical analysis uses (_differentialMap / _redFlagRules), so the quiz
+  // never drifts out of sync with what the engine actually does.
+  // ---------------------------------------------------------------------
+
+  /// Builds [count] multiple-choice questions, mixing two question types:
+  ///   1. "What's the single most likely diagnosis for symptom X?"
+  ///   2. "What's the correct immediate action for red-flag finding Y?"
+  List<QuizQuestion> generateQuiz({int count = 8}) {
+    final rnd = Random();
+    final questions = <QuizQuestion>[];
+
+    // --- Type 1: most-likely-diagnosis questions -------------------------
+    final allDiagnoses = _differentialMap.values
+        .expand((list) => list.map((e) => e['dx'] as String))
+        .toSet()
+        .toList();
+
+    final symptoms = _differentialMap.keys.toList()..shuffle(rnd);
+    final diffTarget = (count / 2).ceil();
+    for (final symptom in symptoms.take(diffTarget)) {
+      final entries = _differentialMap[symptom]!;
+      // Don't assume the map is authored in probability order — compute
+      // the actual highest-probability entry explicitly.
+      final top = entries.reduce(
+          (a, b) => (a['p'] as double) >= (b['p'] as double) ? a : b);
+      final correct = top['dx'] as String;
+
+      final distractors = (allDiagnoses..shuffle(rnd))
+          .where((d) => d != correct)
+          .take(3)
+          .toList();
+      final options = [correct, ...distractors]..shuffle(rnd);
+
+      questions.add(QuizQuestion(
+        prompt:
+            'A patient presents with "$symptom" as the main complaint. '
+            'What is the single most likely diagnosis?',
+        options: options,
+        correctIndex: options.indexOf(correct),
+        explanation: top['why'] as String,
+      ));
+    }
+
+    // --- Type 2: red-flag → correct action questions ---------------------
+    final allActions = _redFlagRules.map((f) => f['action']!).toSet().toList();
+    final flags = List<Map<String, String>>.from(_redFlagRules)..shuffle(rnd);
+    for (final flag in flags.take(count - questions.length)) {
+      final correct = flag['action']!;
+      final distractors = (allActions..shuffle(rnd))
+          .where((a) => a != correct)
+          .take(3)
+          .toList();
+      final options = [correct, ...distractors]..shuffle(rnd);
+
+      questions.add(QuizQuestion(
+        prompt: 'A patient reports: "${flag['label']}". '
+            'What is the correct immediate action?',
+        options: options,
+        correctIndex: options.indexOf(correct),
+        explanation:
+            '${flag['label']} is a ${flag['severity']} red flag.',
+      ));
+    }
+
+    questions.shuffle(rnd);
+    return questions.take(count).toList();
+  }
 }

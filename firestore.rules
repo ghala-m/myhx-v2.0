@@ -39,6 +39,11 @@ service cloud.firestore {
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'developer';
     }
 
+    function isDoctorOrDeveloper() {
+      return isSignedIn() &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['doctor', 'developer'];
+    }
+
     function isOwnerOfPatient(patientId) {
       return isSignedIn() &&
         get(/databases/$(database)/documents/patients/$(patientId)).data.doctorId == request.auth.uid;
@@ -81,6 +86,28 @@ service cloud.firestore {
         allow create: if isOwnerOfPatient(patientId) &&
                           request.resource.data.doctorId == request.auth.uid;
         allow read, update, delete: if isOwnerOfPatient(patientId);
+      }
+    }
+
+    // ---- review_requests/{requestId} ----
+    // A student submits a case (with a denormalized snapshot of the report
+    // — no cross-doctor read of /patients needed by the reviewer) for a
+    // doctor/developer to give feedback on. Requests and reviews are
+    // immutable once created — feedback is never silently edited.
+    match /review_requests/{requestId} {
+      allow create: if isSignedIn() && request.resource.data.studentId == request.auth.uid;
+      allow read: if isSignedIn() &&
+        (resource.data.studentId == request.auth.uid || isDoctorOrDeveloper());
+      allow update, delete: if false;
+
+      match /reviews/{reviewId} {
+        allow create: if isDoctorOrDeveloper() &&
+                          request.resource.data.reviewerId == request.auth.uid;
+        allow read: if isSignedIn() && (
+          get(/databases/$(database)/documents/review_requests/$(requestId)).data.studentId == request.auth.uid ||
+          isDoctorOrDeveloper()
+        );
+        allow update, delete: if false;
       }
     }
 

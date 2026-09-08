@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:myhx_app/screens/login_screen.dart'; // تم تصحيح المسار
 import 'package:myhx_app/screens/main_shell.dart';
 import 'package:myhx_app/services/auth_service.dart'; // تم تصحيح المسار
+import 'package:myhx_app/services/push_notification_service.dart';
 
 class AuthWrapper extends StatelessWidget {
   const AuthWrapper({super.key});
@@ -21,6 +22,7 @@ class AuthWrapper extends StatelessWidget {
         }
         if (snapshot.hasData) {
           // المستخدم مسجل للدخول
+          PushNotificationService.instance.init();
           return const MainShell();
         } else {
           // المستخدم غير مسجل للدخول

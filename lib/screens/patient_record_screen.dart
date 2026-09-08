@@ -2,10 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
+import 'package:provider/provider.dart';
 
 import '../l10n/app_strings.dart';
+import '../models/app_role.dart';
 import '../models/patient.dart';
+import '../models/review_request.dart';
 import '../services/database_service.dart';
+import '../services/review_service.dart';
+import '../services/role_service.dart';
 import '../utils/app_spacing.dart';
 import '../widgets/translated_text.dart';
 import 'patient_timeline_screen.dart';
@@ -32,7 +37,9 @@ class PatientRecordScreen extends StatefulWidget {
 
 class _PatientRecordScreenState extends State<PatientRecordScreen> {
   final DatabaseService _dbService = DatabaseService();
+  final ReviewService _reviewService = ReviewService();
   bool _isGeneratingPdf = false;
+  bool _isSubmittingReview = false;
   late Future<Map<String, dynamic>?> _reportFuture;
   late bool _isUrgent;
   late String? _urgentSource;
@@ -44,6 +51,48 @@ class _PatientRecordScreenState extends State<PatientRecordScreen> {
     _reportFuture = _dbService.getLatestMedicalReport(widget.patient.id);
     _isUrgent = widget.patient.isUrgent;
     _urgentSource = widget.patient.urgentSource;
+  }
+
+  Future<void> _submitForReview(String reportId, Map<String, dynamic> ai) async {
+    final auth = widget.patient.doctorId;
+    setState(() => _isSubmittingReview = true);
+    try {
+      final soap = _asMap(ai['soap_note']) ?? {};
+      final soapText = 'S: ${soap['subjective'] ?? ''}\n'
+          'O: ${soap['objective'] ?? ''}\n'
+          'A: ${soap['assessment'] ?? ''}\n'
+          'P: ${soap['plan'] ?? ''}';
+      final risk = (ai['risk_level'] ?? ai['riskLevel'] ?? '').toString();
+
+      await _reviewService.submitForReview(ReviewRequest(
+        id: '',
+        studentId: auth,
+        studentName: 'Student', // يعرض المشرف اسم الطالب من حسابه لاحقًا
+        patientId: widget.patient.id,
+        reportId: reportId,
+        patientName: widget.patient.name,
+        department: widget.patient.department,
+        chiefComplaint: widget.patient.symptoms.isNotEmpty
+            ? widget.patient.symptoms.join(', ')
+            : '',
+        riskLevel: risk,
+        soapNote: soapText,
+        createdAt: DateTime.now(),
+      ));
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Submitted for mentor review'),
+        ));
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Error: $e')));
+      }
+    } finally {
+      if (mounted) setState(() => _isSubmittingReview = false);
+    }
   }
 
   Future<void> _toggleUrgent() async {
@@ -241,6 +290,26 @@ class _PatientRecordScreenState extends State<PatientRecordScreen> {
               else ...[
                 if (ai != null && ai.isNotEmpty) ...[
                   _aiSection(theme, colors, ai),
+                  const SizedBox(height: AppSpacing.md),
+                  if (context.watch<RoleService>().role == AppRole.student &&
+                      data?['reportId'] != null)
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: _isSubmittingReview
+                            ? null
+                            : () => _submitForReview(
+                                data!['reportId'] as String, ai),
+                        icon: _isSubmittingReview
+                            ? const SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(strokeWidth: 2),
+                              )
+                            : const Icon(Icons.forum_outlined),
+                        label: const Text('Submit for mentor review'),
+                      ),
+                    ),
                   const SizedBox(height: AppSpacing.lg),
                 ],
                 if (history != null && history.isNotEmpty)
