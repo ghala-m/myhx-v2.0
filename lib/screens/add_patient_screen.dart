@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:myhx_app/models/app_role.dart';
 import 'package:provider/provider.dart';
 
 import '../data/departments.dart';
