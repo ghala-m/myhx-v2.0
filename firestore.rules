@@ -39,9 +39,18 @@ service cloud.firestore {
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'developer';
     }
 
-    function isDoctorOrDeveloper() {
-      return isSignedIn() &&
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['doctor', 'developer'];
+    // A doctor becomes a reviewer only after self-verifying with a
+    // university instructor ID (see RoleService.verifyInstructor — a
+    // placeholder check today, meant to be replaced by a server-verified
+    // university API call later). Developers can always review.
+    function canReview() {
+      return isSignedIn() && (
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'developer' ||
+        (
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'doctor' &&
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isInstructor == true
+        )
+      );
     }
 
     function isOwnerOfPatient(patientId) {
@@ -92,20 +101,21 @@ service cloud.firestore {
     // ---- review_requests/{requestId} ----
     // A student submits a case (with a denormalized snapshot of the report
     // — no cross-doctor read of /patients needed by the reviewer) for a
-    // doctor/developer to give feedback on. Requests and reviews are
-    // immutable once created — feedback is never silently edited.
+    // verified instructor doctor (or developer) to give feedback on.
+    // Requests and reviews are immutable once created — feedback is never
+    // silently edited.
     match /review_requests/{requestId} {
       allow create: if isSignedIn() && request.resource.data.studentId == request.auth.uid;
       allow read: if isSignedIn() &&
-        (resource.data.studentId == request.auth.uid || isDoctorOrDeveloper());
+        (resource.data.studentId == request.auth.uid || canReview());
       allow update, delete: if false;
 
       match /reviews/{reviewId} {
-        allow create: if isDoctorOrDeveloper() &&
+        allow create: if canReview() &&
                           request.resource.data.reviewerId == request.auth.uid;
         allow read: if isSignedIn() && (
           get(/databases/$(database)/documents/review_requests/$(requestId)).data.studentId == request.auth.uid ||
-          isDoctorOrDeveloper()
+          canReview()
         );
         allow update, delete: if false;
       }

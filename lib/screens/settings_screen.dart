@@ -224,6 +224,34 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
             ),
             const SizedBox(height: AppSpacing.md),
+            if (roles.realRole == AppRole.doctor) ...[
+              _sectionLabel(arabic ? 'التدريس' : 'Teaching'),
+              AppCard(
+                padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+                child: roles.isInstructor
+                    ? _tile(
+                        icon: Icons.verified_rounded,
+                        title: arabic ? 'أستاذ مُتحقَّق منه' : 'Verified instructor',
+                        subtitle: arabic
+                            ? 'تقدر تراجع حالات الطلاب المرسلة وتقيّمها'
+                            : 'You can review submitted student cases and rate them',
+                        trailing: TextButton(
+                          onPressed: () => roles.revokeInstructor(),
+                          child: Text(arabic ? 'إلغاء' : 'Revoke'),
+                        ),
+                      )
+                    : _tile(
+                        icon: Icons.school_outlined,
+                        title: arabic ? 'هل أنت أستاذ؟' : 'Are you an instructor?',
+                        subtitle: arabic
+                            ? 'تحقّق بمعرّفك الجامعي لفتح مراجعة حالات الطلاب'
+                            : 'Verify your university ID to unlock reviewing student cases',
+                        trailing: const Icon(Icons.chevron_right_rounded),
+                        onTap: () => _verifyInstructorDialog(roles, arabic),
+                      ),
+              ),
+              const SizedBox(height: AppSpacing.md),
+            ],
             _sectionLabel(arabic ? 'الأقسام' : 'Departments'),
             AppCard(
               padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
@@ -423,6 +451,68 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
             ),
             const SizedBox(height: AppSpacing.xl),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _verifyInstructorDialog(RoleService roles, bool arabic) async {
+    final controller = TextEditingController();
+    String? error;
+
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          title: Text(arabic ? 'التحقق من الأستاذية' : 'Instructor verification'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                arabic
+                    ? 'أدخل المعرّف الجامعي الخاص بك كأستاذ (يُصدره لك قسم شؤون هيئة التدريس بالجامعة).'
+                    : 'Enter the university instructor ID your faculty affairs office issued you.',
+                style: AppTypography.bodyMedium(context),
+              ),
+              const SizedBox(height: AppSpacing.md),
+              TextField(
+                controller: controller,
+                autofocus: true,
+                decoration: InputDecoration(
+                  labelText: arabic ? 'المعرّف الجامعي' : 'University ID',
+                  errorText: error,
+                  border: const OutlineInputBorder(),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: Text(context.tr('cancel')),
+            ),
+            FilledButton(
+              onPressed: () async {
+                final ok = await roles.verifyInstructor(controller.text);
+                if (ok) {
+                  if (ctx.mounted) Navigator.of(ctx).pop();
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                      content: Text(arabic
+                          ? 'تم التحقق! صرت أستاذًا مُفعَّلًا'
+                          : 'Verified! Instructor access unlocked'),
+                    ));
+                  }
+                } else {
+                  setDialogState(() => error = arabic
+                      ? 'المعرّف غير صحيح'
+                      : 'That ID wasn\'t recognized');
+                }
+              },
+              child: Text(arabic ? 'تحقّق' : 'Verify'),
+            ),
           ],
         ),
       ),

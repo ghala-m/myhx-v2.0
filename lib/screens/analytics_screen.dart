@@ -1,10 +1,13 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
+import '../models/app_role.dart';
 import '../models/patient.dart';
 import '../services/analytics_service.dart';
 import '../services/auth_service.dart';
 import '../services/database_service.dart';
+import '../services/role_service.dart';
 import '../utils/app_spacing.dart';
 import '../widgets/app_card.dart';
 import '../widgets/offline_banner.dart';
@@ -56,18 +59,23 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final roles = context.watch<RoleService>();
+    final canReview =
+        roles.realRole == AppRole.developer ||
+        (roles.realRole == AppRole.doctor && roles.isInstructor);
 
     return Scaffold(
       appBar: AppBar(
         title: Text(context.tr('analytics')),
         actions: [
-          IconButton(
-            tooltip: 'Review queue',
-            icon: const Icon(Icons.forum_outlined),
-            onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const ReviewQueueScreen()),
+          if (canReview)
+            IconButton(
+              tooltip: 'Review queue',
+              icon: const Icon(Icons.forum_outlined),
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const ReviewQueueScreen()),
+              ),
             ),
-          ),
         ],
       ),
       body: Column(

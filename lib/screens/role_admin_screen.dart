@@ -54,6 +54,7 @@ class _RoleAdminScreenState extends State<RoleAdminScreen> {
             itemBuilder: (context, i) {
               final u = users[i];
               final role = AppRoleX.fromId(u['role'] as String?);
+              final isInstructor = u['isInstructor'] == true;
               return AppCard(
                 padding: const EdgeInsets.symmetric(
                     horizontal: AppSpacing.md, vertical: AppSpacing.sm),
@@ -63,8 +64,23 @@ class _RoleAdminScreenState extends State<RoleAdminScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('${u['displayName'] ?? 'Unnamed'}',
-                              style: theme.textTheme.titleSmall),
+                          Row(
+                            children: [
+                              Text('${u['displayName'] ?? 'Unnamed'}',
+                                  style: theme.textTheme.titleSmall),
+                              if (role == AppRole.doctor && isInstructor) ...[
+                                const SizedBox(width: 6),
+                                Icon(Icons.verified_rounded,
+                                    size: 14,
+                                    color: theme.colorScheme.primary),
+                                const SizedBox(width: 2),
+                                Text('Instructor',
+                                    style: theme.textTheme.labelSmall
+                                        ?.copyWith(
+                                            color: theme.colorScheme.primary)),
+                              ],
+                            ],
+                          ),
                           Text('${u['email'] ?? ''}',
                               style: theme.textTheme.bodySmall),
                         ],
