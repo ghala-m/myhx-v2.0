@@ -3,8 +3,10 @@ import 'package:provider/provider.dart';
 
 import '../data/departments.dart';
 import '../data/specialty_templates.dart';
+import '../models/question_suggestion.dart';
 import '../services/feedback_service.dart';
 import '../services/question_bank_service.dart';
+import '../services/question_suggestion_service.dart';
 import '../utils/app_spacing.dart';
 import '../utils/english_input.dart';
 import '../widgets/app_card.dart';
@@ -19,6 +21,7 @@ class QuestionEditorScreen extends StatefulWidget {
 
 class _QuestionEditorScreenState extends State<QuestionEditorScreen> {
   final _bank = QuestionBankService.instance;
+  final _suggestionService = QuestionSuggestionService();
 
   String _departmentId = Departments.all.first.id;
   bool _loading = true;
@@ -66,6 +69,30 @@ class _QuestionEditorScreenState extends State<QuestionEditorScreen> {
       appBar: AppBar(
         title: const Text('Question editor'),
         backgroundColor: theme.colorScheme.surfaceContainerHighest,
+        actions: [
+          StreamBuilder<List<QuestionSuggestion>>(
+            stream: _suggestionService.pending(),
+            builder: (context, snapshot) {
+              final count = snapshot.data?.length ?? 0;
+              return IconButton(
+                tooltip: 'Student suggestions',
+                onPressed: () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => _SuggestionsQueueScreen(
+                      bank: _bank,
+                      suggestionService: _suggestionService,
+                    ),
+                  ),
+                ),
+                icon: Badge(
+                  label: Text('$count'),
+                  isLabelVisible: count > 0,
+                  child: const Icon(Icons.inbox_outlined),
+                ),
+              );
+            },
+          ),
+        ],
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _editQuestion(),
@@ -300,6 +327,148 @@ class _QuestionFormState extends State<_QuestionForm> {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Developer-facing queue of pending student question/notebook
+/// suggestions. Converting one opens the same _QuestionForm used to add
+/// any question, pre-filled from the suggestion — the developer reviews
+/// and adjusts wording before it becomes a real question, it's never
+/// added to the bank automatically.
+class _SuggestionsQueueScreen extends StatelessWidget {
+  const _SuggestionsQueueScreen({
+    required this.bank,
+    required this.suggestionService,
+  });
+
+  final QuestionBankService bank;
+  final QuestionSuggestionService suggestionService;
+
+  Future<void> _convert(BuildContext context, QuestionSuggestion s) async {
+    final seed = TemplateQuestion(
+      id: 'sq_${s.id}',
+      en: s.type == 'notebook' ? s.notebookText : s.en,
+      ar: s.ar,
+      type: s.questionType,
+      options: s.options,
+      critical: s.critical,
+    );
+    final result = await showModalBottomSheet<TemplateQuestion>(
+      context: context,
+      isScrollControlled: true,
+      builder: (_) => _QuestionForm(question: seed),
+    );
+    if (result == null) return;
+    await bank.saveCustomQuestion(s.department, result);
+    await suggestionService.setStatus(s.id, 'approved');
+    if (context.mounted) context.read<FeedbackService>().success();
+  }
+
+  Future<void> _reject(BuildContext context, QuestionSuggestion s) async {
+    final noteController = TextEditingController();
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Reject suggestion'),
+        content: TextField(
+          controller: noteController,
+          decoration: const InputDecoration(labelText: 'Note (optional)'),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Reject'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    await suggestionService.setStatus(
+      s.id,
+      'rejected',
+      note: noteController.text.trim().isEmpty ? null : noteController.text.trim(),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Student suggestions')),
+      body: StreamBuilder<List<QuestionSuggestion>>(
+        stream: suggestionService.pending(),
+        builder: (context, snapshot) {
+          final items = snapshot.data ?? const [];
+          if (items.isEmpty) {
+            return const Center(child: Text('No pending suggestions'));
+          }
+          return ListView.builder(
+            padding: const EdgeInsets.all(AppSpacing.md),
+            itemCount: items.length,
+            itemBuilder: (context, i) {
+              final s = items[i];
+              final dept = Departments.byId(s.department);
+              return Padding(
+                padding: const EdgeInsets.only(bottom: AppSpacing.md),
+                child: AppCard(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .primaryContainer,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              s.type == 'notebook' ? 'Notebook' : 'Question',
+                              style: const TextStyle(fontSize: 11),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(dept?.nameEn ?? s.department,
+                              style: Theme.of(context).textTheme.bodySmall),
+                          const Spacer(),
+                          Text('by ${s.submittedByName}',
+                              style: Theme.of(context).textTheme.bodySmall),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        s.type == 'notebook' ? s.notebookText : s.en,
+                        style: Theme.of(context).textTheme.bodyMedium,
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          OutlinedButton(
+                            onPressed: () => _reject(context, s),
+                            child: const Text('Reject'),
+                          ),
+                          const SizedBox(width: 8),
+                          FilledButton(
+                            onPressed: () => _convert(context, s),
+                            child: const Text('Convert to question'),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          );
+        },
       ),
     );
   }

@@ -121,6 +121,19 @@ service cloud.firestore {
       }
     }
 
+    // ---- question_suggestions/{id} ----
+    // A student proposes a question or a free-form "notebook" note; only
+    // a developer can approve/reject (which happens alongside them
+    // writing the actual question into /question_bank via the existing
+    // developer-only rule below — this collection is just the inbox).
+    match /question_suggestions/{id} {
+      allow create: if isSignedIn() && request.resource.data.submittedBy == request.auth.uid;
+      allow read: if isSignedIn() &&
+        (resource.data.submittedBy == request.auth.uid || isDeveloper());
+      allow update: if isDeveloper();
+      allow delete: if false;
+    }
+
     // ---- question_bank/{departmentId} ----
     // Every signed-in user (doctor/student) reads the merged question set;
     // only developers may author/hide questions.
