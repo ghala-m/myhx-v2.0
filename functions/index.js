@@ -1,9 +1,8 @@
 /**
- * myhx- push notification Cloud Functions.
+ * myhx- Cloud Functions.
  *
- * Two triggers, matching the two features built on the Flutter side that
- * need a real push (not just an in-app banner that only works while the
- * app happens to be open):
+ * Push notifications (client can't get a system notification while the
+ * app is backgrounded/closed without one of these):
  *
  *   1. onPatientFlaggedUrgent — patients/{patientId} updated so that
  *      isUrgent goes from false/absent to true (whether set manually by
@@ -14,7 +13,22 @@
  *      student's submitted case (review_requests/{id}/reviews/{id}
  *      created). Notifies the student who submitted it.
  *
- * Both read the target user's FCM tokens from users/{uid}.fcmTokens
+ * Case referral (the one operation that genuinely needs server-side
+ * privilege, not just a notification):
+ *
+ *   3. onCaseReferralAccepted — case_referrals/{id} status flips to
+ *      'accepted'. This is the ONLY place real patient data ever moves
+ *      between two different doctors' accounts, and it only happens
+ *      here, server-side, using the Admin SDK (which bypasses
+ *      firestore.rules entirely) — the Flutter client is never given
+ *      cross-account read access to make this copy itself. Copies the
+ *      patient doc + every report in its /reports subcollection into a
+ *      brand new patient owned by the recipient, tagged with
+ *      referredFrom so it's traceable. The original patient is left
+ *      untouched under the referring doctor (their own historical
+ *      record).
+ *
+ * All four read the target user's FCM tokens from users/{uid}.fcmTokens
  * (an array — see lib/services/push_notification_service.dart on the
  * Flutter side, which keeps this field up to date) and clean up any
  * tokens FCM reports as dead so this list doesn't grow unbounded with
@@ -122,6 +136,59 @@ exports.onMentorReviewCreated = onDocumentCreated(
       {
         type: "mentor_review",
         requestId: event.params.requestId,
+      },
+    );
+  },
+);
+
+exports.onCaseReferralAccepted = onDocumentUpdated(
+  "case_referrals/{referralId}",
+  async (event) => {
+    const before = event.data.before.data();
+    const after = event.data.after.data();
+
+    if (before.status === after.status || after.status !== "accepted") {
+      return;
+    }
+
+    const sourcePatientRef = db.collection("patients").doc(after.patientId);
+    const sourcePatientSnap = await sourcePatientRef.get();
+    if (!sourcePatientSnap.exists) {
+      logger.error(`Referral ${event.params.referralId}: source patient missing.`);
+      return;
+    }
+    const sourcePatient = sourcePatientSnap.data();
+
+    // Full, real copy — this is a genuine handoff of care, not a
+    // de-identified teaching share. The recipient becomes the new
+    // owner; the original stays with the referring doctor as their own
+    // historical record.
+    const newPatientRef = await db.collection("patients").add({
+      ...sourcePatient,
+      doctorId: after.toDoctorId,
+      referredFrom: after.patientId,
+      referredFromDoctor: after.fromDoctorId,
+    });
+
+    const reportsSnap = await sourcePatientRef.collection("reports").get();
+    const batch = db.batch();
+    reportsSnap.forEach((reportDoc) => {
+      const reportRef = newPatientRef.collection("reports").doc(reportDoc.id);
+      batch.set(reportRef, reportDoc.data());
+    });
+    await batch.commit();
+
+    await event.data.after.ref.update({ newPatientId: newPatientRef.id });
+
+    await sendToUser(
+      after.toDoctorId,
+      {
+        title: "Case referred to you",
+        body: `${after.fromDoctorName || "A colleague"} referred a patient to you.`,
+      },
+      {
+        type: "case_referral_accepted",
+        patientId: newPatientRef.id,
       },
     );
   },

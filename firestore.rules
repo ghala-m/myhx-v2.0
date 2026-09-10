@@ -134,6 +134,41 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    // ---- teaching_cases/{id} ----
+    // Fully de-identified copies a doctor creates from their OWN patient
+    // (client-side, since reading your own data needs no special
+    // access), then world-readable — safe because no real identifier
+    // (name, exact age, ward/room) is ever written into these.
+    match /teaching_cases/{id} {
+      allow create: if isSignedIn() && request.resource.data.sourceDoctorId == request.auth.uid;
+      allow read: if isSignedIn();
+      allow update, delete: if isSignedIn() &&
+        (resource.data.sourceDoctorId == request.auth.uid || isDeveloper());
+    }
+
+    // ---- case_referrals/{id} ----
+    // A real handoff of care. Nothing here grants cross-account reads —
+    // the receiving doctor only sees a small preview until they accept,
+    // and the actual patient-data copy is done server-side (Admin SDK,
+    // bypasses these rules entirely) by a Cloud Function reacting to the
+    // status flip below. See functions/index.js: onCaseReferralAccepted.
+    match /case_referrals/{id} {
+      allow create: if isSignedIn() &&
+        request.resource.data.fromDoctorId == request.auth.uid &&
+        isOwnerOfPatient(request.resource.data.patientId);
+      allow read: if isSignedIn() &&
+        (resource.data.fromDoctorId == request.auth.uid || resource.data.toDoctorId == request.auth.uid);
+      // Only the recipient can respond, only by flipping 'status' from
+      // pending to accepted/declined — nothing else about the referral
+      // can be altered after creation.
+      allow update: if isSignedIn() &&
+        request.auth.uid == resource.data.toDoctorId &&
+        resource.data.status == 'pending' &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']) &&
+        request.resource.data.status in ['accepted', 'declined'];
+      allow delete: if false;
+    }
+
     // ---- question_bank/{departmentId} ----
     // Every signed-in user (doctor/student) reads the merged question set;
     // only developers may author/hide questions.

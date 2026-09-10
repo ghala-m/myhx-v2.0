@@ -40,6 +40,30 @@
         { "fieldPath": "status", "order": "ASCENDING" },
         { "fieldPath": "createdAt", "order": "DESCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "teaching_cases",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "sourceDoctorId", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "case_referrals",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "fromDoctorId", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "case_referrals",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "toDoctorId", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
     }
   ],
   "fieldOverrides": []

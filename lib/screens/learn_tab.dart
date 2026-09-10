@@ -8,6 +8,7 @@ import '../widgets/app_card.dart';
 import 'my_reviews_screen.dart';
 import 'quiz_screen.dart';
 import 'submit_question_screen.dart';
+import 'teaching_cases_screen.dart';
 
 /// The student-facing 'Learn' destination — takes the slot doctors see as
 /// 'Insights' (AnalyticsScreen). Starts with a self-review quiz; mentor
@@ -57,6 +58,47 @@ class LearnTab extends StatelessWidget {
                           arabic
                               ? 'أسئلة مبنية على نفس منطق التحليل السريري في التطبيق'
                               : 'Questions drawn from the app\'s own clinical reasoning',
+                          style: AppTypography.caption(context),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Icon(Icons.chevron_right_rounded),
+                ],
+              ),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            AppCard(
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const TeachingCasesScreen()),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 48,
+                    height: 48,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.primaryContainer,
+                      borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+                    ),
+                    child: Icon(Icons.menu_book_outlined,
+                        color: theme.colorScheme.primary),
+                  ),
+                  const SizedBox(width: AppSpacing.md),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          arabic ? 'حالات تعليمية' : 'Teaching cases',
+                          style: AppTypography.titleMedium(context),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          arabic
+                              ? 'حالات حقيقية سابقة، بدون أي معلومة شخصية'
+                              : 'Real past cases, fully de-identified',
                           style: AppTypography.caption(context),
                         ),
                       ],

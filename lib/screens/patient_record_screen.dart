@@ -12,11 +12,15 @@ import 'package:qr_flutter/qr_flutter.dart';
 
 import '../l10n/app_strings.dart';
 import '../models/app_role.dart';
+import '../models/case_referral.dart';
 import '../models/patient.dart';
 import '../models/review_request.dart';
+import '../models/teaching_case.dart';
+import '../services/case_referral_service.dart';
 import '../services/database_service.dart';
 import '../services/review_service.dart';
 import '../services/role_service.dart';
+import '../services/teaching_case_service.dart';
 import '../utils/app_spacing.dart';
 import '../widgets/translated_text.dart';
 
@@ -268,6 +272,11 @@ class _PatientRecordScreenState extends State<PatientRecordScreen>
             tooltip: 'QR',
             icon: const Icon(Icons.qr_code_2_rounded),
             onPressed: () => _showQr(context),
+          ),
+          IconButton(
+            tooltip: 'Share case',
+            icon: const Icon(Icons.ios_share_rounded),
+            onPressed: () => _showShareSheet(context),
           ),
         ],
         bottom: TabBar(
@@ -699,6 +708,168 @@ class _PatientRecordScreenState extends State<PatientRecordScreen>
         ),
       ),
     );
+  }
+
+  void _showShareSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      showDragHandle: true,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.swap_horiz_rounded),
+              title: const Text('Refer to another doctor/student'),
+              subtitle: const Text('Transfers the full real case — needs their acceptance'),
+              onTap: () {
+                Navigator.of(ctx).pop();
+                _referDialog(context);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.school_outlined),
+              title: const Text('Share for teaching (anonymized)'),
+              subtitle: const Text('No name, exact age, or other identifier — visible to everyone'),
+              onTap: () {
+                Navigator.of(ctx).pop();
+                _shareForTeaching(context);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _referDialog(BuildContext context) async {
+    final controller = TextEditingController();
+    String? error;
+
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          title: const Text('Refer this case'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                  "Enter the recipient's account ID (find it in their Settings)."),
+              const SizedBox(height: AppSpacing.md),
+              TextField(
+                controller: controller,
+                decoration: InputDecoration(
+                  labelText: "Recipient's account ID",
+                  errorText: error,
+                  border: const OutlineInputBorder(),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () async {
+                final toId = controller.text.trim();
+                if (toId.isEmpty) return;
+                if (toId == widget.patient.doctorId) {
+                  setDialogState(() => error = "That's your own ID");
+                  return;
+                }
+                try {
+                  await CaseReferralService().refer(CaseReferral(
+                    id: '',
+                    patientId: widget.patient.id,
+                    fromDoctorId: widget.patient.doctorId,
+                    fromDoctorName:
+                        FirebaseAuth.instance.currentUser?.displayName ??
+                            'A colleague',
+                    toDoctorId: toId,
+                    patientNamePreview: widget.patient.name,
+                    department: widget.patient.department,
+                    status: 'pending',
+                    createdAt: DateTime.now(),
+                  ));
+                  if (ctx.mounted) Navigator.of(ctx).pop();
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                      content: Text('Referral sent — awaiting acceptance'),
+                    ));
+                  }
+                } catch (e) {
+                  setDialogState(() => error = 'Failed: $e');
+                }
+              },
+              child: const Text('Send referral'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _shareForTeaching(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Share for teaching?'),
+        content: const Text(
+          'A de-identified copy (department, age range, gender, chief '
+          'complaint, SOAP note only — no name or exact age) will become '
+          'visible to every doctor and student in the app.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Share'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
+    final report = await _reportFuture;
+    final ai = _asMap(report?['aiAnalysis']) ?? {};
+    final soap = _asMap(ai['soap_note']) ?? {};
+    final soapText = 'S: ${soap['subjective'] ?? ''}\n'
+        'O: ${soap['objective'] ?? ''}\n'
+        'A: ${soap['assessment'] ?? ''}\n'
+        'P: ${soap['plan'] ?? ''}';
+
+    try {
+      await TeachingCaseService().share(TeachingCase(
+        id: '',
+        sourceDoctorId: widget.patient.doctorId,
+        department: widget.patient.department,
+        ageRange: TeachingCase.bucketAge(widget.patient.age),
+        gender: widget.patient.gender,
+        chiefComplaint: widget.patient.symptoms.isNotEmpty
+            ? widget.patient.symptoms.join(', ')
+            : '',
+        riskLevel: (ai['risk_level'] ?? '').toString(),
+        soapNote: soapText,
+        createdAt: DateTime.now(),
+      ));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Shared as a teaching case'),
+        ));
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Error: $e')));
+      }
+    }
   }
 
   Widget _summaryCard(ThemeData theme, ColorScheme colors,

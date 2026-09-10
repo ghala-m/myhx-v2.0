@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../data/departments.dart';
@@ -19,6 +20,7 @@ import '../utils/theme_provider.dart';
 import '../widgets/app_card.dart';
 import '../l10n/app_strings.dart';
 import 'question_editor_screen.dart';
+import 'referrals_screen.dart';
 import 'role_admin_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -169,6 +171,55 @@ class _SettingsScreenState extends State<SettingsScreen> {
           padding: const EdgeInsets.all(AppSpacing.md),
           children: [
             _profileCard(theme, roles),
+            if (roles.realRole == AppRole.doctor) ...[
+              const SizedBox(height: AppSpacing.sm),
+              AppCard(
+                child: Row(
+                  children: [
+                    Icon(Icons.badge_outlined,
+                        size: 20, color: theme.colorScheme.primary),
+                    const SizedBox(width: AppSpacing.sm),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            arabic ? 'معرّف حسابك' : 'Your account ID',
+                            style: AppTypography.caption(context),
+                          ),
+                          Text(
+                            FirebaseAuth.instance.currentUser?.uid ?? '',
+                            style: AppTypography.bodyMedium(context),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      tooltip: arabic ? 'نسخ' : 'Copy',
+                      icon: const Icon(Icons.copy_rounded, size: 18),
+                      onPressed: () {
+                        final uid = FirebaseAuth.instance.currentUser?.uid;
+                        if (uid == null) return;
+                        Clipboard.setData(ClipboardData(text: uid));
+                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                          content: Text(arabic ? 'تم النسخ' : 'Copied'),
+                        ));
+                      },
+                    ),
+                  ],
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.only(top: 4, left: 4, right: 4),
+                child: Text(
+                  arabic
+                      ? 'شاركي هذا المعرّف مع زميل عشان يقدر يحيلك حالة'
+                      : 'Share this with a colleague so they can refer a case to you',
+                  style: AppTypography.caption(context),
+                ),
+              ),
+            ],
             const SizedBox(height: AppSpacing.md),
             _sectionLabel(arabic ? 'الثيم' : 'Theme'),
             AppCard(
@@ -269,6 +320,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             : '${roles.departments.length} selected'),
                     trailing: const Icon(Icons.chevron_right_rounded),
                     onTap: _pickDepartments,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            _sectionLabel(arabic ? 'مشاركة الحالات' : 'Case sharing'),
+            AppCard(
+              padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+              child: Column(
+                children: [
+                  _tile(
+                    icon: Icons.swap_horiz_rounded,
+                    title: arabic ? 'الإحالات' : 'Referrals',
+                    subtitle: arabic
+                        ? 'حالات أُحيلت لك أو أحلتها لزميل'
+                        : 'Cases referred to you or by you',
+                    trailing: const Icon(Icons.chevron_right_rounded),
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => const ReferralsScreen()),
+                    ),
                   ),
                 ],
               ),
