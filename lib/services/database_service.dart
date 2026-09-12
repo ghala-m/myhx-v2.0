@@ -270,7 +270,7 @@ class DatabaseService {
   Future<Map<String, dynamic>?> getDoctorProfile(String uid) async {
     try {      final doc = await _firestore.collection('users').doc(uid).get();      return doc.data();
     } catch (e) {
-      AppLogger.d(e.toString());
+      AppLogger.d(e);
       return null;
     }
   }

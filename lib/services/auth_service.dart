@@ -30,7 +30,7 @@ class AuthService {
   }
 
   // Function to create a new account with improved error handling
-  Future<User?> signUpWithEmail(String email, String password, {String? displayName, String? specialization, String? academicYear}) async {
+  Future<User?> signUpWithEmail(String email, String password, {String? displayName, String? specialization, String? academicYear, String role = 'student'}) async {
     try {
       UserCredential result = await _auth.createUserWithEmailAndPassword(
         email: email.trim(), 
@@ -51,6 +51,7 @@ class AuthService {
           'displayName': displayName,
           'specialization': specialization,
           'academicYear': academicYear,
+          'role': role,
           'createdAt': FieldValue.serverTimestamp(),
         });
       }

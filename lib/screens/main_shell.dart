@@ -68,6 +68,11 @@ class _MainShellState extends State<MainShell> {
     setState(() => _index = 1);
   }
 
+  void _goToInsights() {
+    context.read<FeedbackService>().tap();
+    setState(() => _index = 2);
+  }
+
   Future<void> _startNewEncounter() async {
     context.read<FeedbackService>().tap();
     await Navigator.of(context).push(
@@ -86,7 +91,11 @@ class _MainShellState extends State<MainShell> {
     final isDoctor = roles.role == AppRole.doctor;
 
     final pages = [
-      HomeTab(key: _homeKey, onSeeAllPatients: _goToPatients),
+      HomeTab(
+        key: _homeKey,
+        onSeeAllPatients: _goToPatients,
+        onOpenInsights: _goToInsights,
+      ),
       PatientsTab(key: _patientsKey),
       isDoctor ? const AnalyticsScreen() : const LearnTab(),
       const SettingsScreen(),

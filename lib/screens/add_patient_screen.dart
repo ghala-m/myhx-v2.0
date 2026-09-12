@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:myhx_app/models/app_role.dart';
 import 'package:provider/provider.dart';
 
 import '../data/departments.dart';
@@ -36,22 +35,12 @@ class _AddPatientScreenState extends State<AddPatientScreen> {
   String? _selectedDepartment;
   bool _isLoading = false;
 
-  String _deptQuery = '';
-
   List<Department> _visibleDepartments(BuildContext context) {
     final role = context.watch<RoleService>();
     final selected = role.departments;
-    var list = role.role.seesAllDepartments || selected.isEmpty
+    return role.role.seesAllDepartments || selected.isEmpty
         ? Departments.all
         : Departments.all.where((d) => selected.contains(d.id)).toList();
-    final q = _deptQuery.trim().toLowerCase();
-    if (q.isNotEmpty) {
-      list = list
-          .where((d) =>
-              d.nameEn.toLowerCase().contains(q) || d.nameAr.contains(q))
-          .toList();
-    }
-    return list;
   }
 
 
@@ -200,22 +189,7 @@ class _AddPatientScreenState extends State<AddPatientScreen> {
                   children: [
                     _sectionTitle('Department', Icons.apartment_outlined),
                     const SizedBox(height: AppSpacing.md),
-                    TextField(
-                      decoration: const InputDecoration(
-                        hintText: 'Search departments…',
-                        prefixIcon: Icon(Icons.search_rounded, size: 20),
-                        isDense: true,
-                      ),
-                      onChanged: (v) => setState(() => _deptQuery = v),
-                    ),
-                    const SizedBox(height: AppSpacing.md),
-                    Wrap(
-                      spacing: AppSpacing.sm,
-                      runSpacing: AppSpacing.sm,
-                      children: _visibleDepartments(context)
-                          .map(_departmentChip)
-                          .toList(),
-                    ),
+                    _departmentDropdown(context),
                   ],
                 ),
               ),
@@ -368,22 +342,43 @@ class _AddPatientScreenState extends State<AddPatientScreen> {
     );
   }
 
-  Widget _departmentChip(Department department) {
-    final theme = Theme.of(context);
+  Widget _departmentDropdown(BuildContext context) {
     final arabic = S.of(context).isArabic;
-    final selected = _selectedDepartment == department.id;
-    return ChoiceChip(
-      selected: selected,
-      onSelected: (_) => setState(() => _selectedDepartment = department.id),
-      avatar: Icon(
-        DepartmentIcons.resolve(department.icon),
-        size: 18,
-        color: selected
-            ? theme.colorScheme.primary
-            : theme.colorScheme.onSurfaceVariant,
+    final departments = _visibleDepartments(context);
+    // Sorted by group so related departments sit next to each other,
+    // with the group name prefixed on each item for context — a single
+    // clean dropdown instead of a scattered cloud of chips.
+    final sorted = [...departments]
+      ..sort((a, b) {
+        final byGroup = a.group.compareTo(b.group);
+        return byGroup != 0 ? byGroup : a.name(arabic).compareTo(b.name(arabic));
+      });
+
+    return DropdownButtonFormField<String>(
+      initialValue: _selectedDepartment,
+      isExpanded: true,
+      decoration: InputDecoration(
+        hintText: arabic ? 'اختاري القسم' : 'Select department',
+        prefixIcon: const Icon(Icons.apartment_outlined, size: 20),
       ),
-      label: Text(department.name(arabic)),
-      showCheckmark: false,
+      items: sorted
+          .map((d) => DropdownMenuItem(
+                value: d.id,
+                child: Row(
+                  children: [
+                    Icon(DepartmentIcons.resolve(d.icon), size: 18),
+                    const SizedBox(width: AppSpacing.sm),
+                    Expanded(
+                      child: Text(
+                        '${d.group} · ${d.name(arabic)}',
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+              ))
+          .toList(),
+      onChanged: (v) => setState(() => _selectedDepartment = v),
     );
   }
 }

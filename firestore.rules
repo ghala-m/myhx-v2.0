@@ -72,8 +72,13 @@ service cloud.firestore {
 
       // Account creation at sign-up: a user may create their own doc, but
       // may not hand themselves a role above the default 'student'.
+      // A new account may self-select 'student' or 'doctor' at signup
+      // (a working physician creating their own account is a normal,
+      // expected case — see signup_screen.dart). 'developer' is never
+      // self-selectable; only an existing developer can grant it (see
+      // the update rule below).
       allow create: if isSignedIn() && request.auth.uid == uid &&
-        (!('role' in request.resource.data) || request.resource.data.role == 'student');
+        (!('role' in request.resource.data) || request.resource.data.role in ['student', 'doctor']);
 
       // A user may update their own profile (name, department picks, theme,
       // etc.) as long as the write does NOT touch 'role' — OR they are
@@ -119,6 +124,15 @@ service cloud.firestore {
         );
         allow update, delete: if false;
       }
+    }
+
+    // ---- quiz_attempts/{id} ----
+    // Completed self-review quiz results, so progress can actually be
+    // tracked. Immutable once written.
+    match /quiz_attempts/{id} {
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      allow read: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow update, delete: if false;
     }
 
     // ---- question_suggestions/{id} ----

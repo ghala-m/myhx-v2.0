@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
+import '../models/quiz_attempt.dart';
 import '../models/quiz_question.dart';
 import '../services/clinical_ai_service.dart';
+import '../services/quiz_attempt_service.dart';
 import '../utils/app_spacing.dart';
 import '../utils/app_typography.dart';
 import '../widgets/app_card.dart';
@@ -40,6 +43,7 @@ class _QuizScreenState extends State<QuizScreen> {
   void _next() {
     if (_index == _questions.length - 1) {
       setState(() => _index++); // move past the end -> shows results
+      _saveAttempt();
       return;
     }
     setState(() {
@@ -47,6 +51,18 @@ class _QuizScreenState extends State<QuizScreen> {
       _selectedOption = null;
       _answered = false;
     });
+  }
+
+  void _saveAttempt() {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+    QuizAttemptService().record(QuizAttempt(
+      id: '',
+      userId: user.uid,
+      correctCount: _correctCount,
+      totalQuestions: _questions.length,
+      createdAt: DateTime.now(),
+    ));
   }
 
   void _restart() {

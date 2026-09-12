@@ -25,6 +25,7 @@ class _SignupScreenState extends State<SignupScreen> {
   bool _isPasswordVisible = false;
   bool _isConfirmPasswordVisible = false;
   bool _isLoading = false;
+  bool _isDoctor = false;
   String _selectedSpecialty = 'General Medicine';
   String _selectedYear = '1st Year';
 
@@ -41,7 +42,7 @@ class _SignupScreenState extends State<SignupScreen> {
     'Emergency Medicine',
   ];
 
-  final List<String> _years = [
+  final List<String> _studentYears = [
     '1st Year',
     '2nd Year',
     '3rd Year',
@@ -50,10 +51,15 @@ class _SignupScreenState extends State<SignupScreen> {
     '6th Year',
     '7th Year',
     'Intern',
+  ];
+
+  final List<String> _doctorLevels = [
     'Resident',
     'Specialist',
     'Consultant',
   ];
+
+  List<String> get _yearOptions => _isDoctor ? _doctorLevels : _studentYears;
 
   @override
   void dispose() {
@@ -95,6 +101,7 @@ class _SignupScreenState extends State<SignupScreen> {
         displayName: _nameController.text.trim(),
         specialization: _selectedSpecialty,
         academicYear: _selectedYear,
+        role: _isDoctor ? 'doctor' : 'student',
       );
     } on FirebaseAuthException catch (e) {
       if (mounted) {
@@ -182,6 +189,26 @@ class _SignupScreenState extends State<SignupScreen> {
                       },
                     ),
                     const SizedBox(height: AppSpacing.md),
+                    Text('I am a...', style: AppTypography.bodyMedium(context)),
+                    const SizedBox(height: AppSpacing.xs),
+                    SegmentedButton<bool>(
+                      segments: const [
+                        ButtonSegment(
+                            value: false,
+                            icon: Icon(Icons.school_outlined),
+                            label: Text('Student')),
+                        ButtonSegment(
+                            value: true,
+                            icon: Icon(Icons.local_hospital_outlined),
+                            label: Text('Doctor')),
+                      ],
+                      selected: {_isDoctor},
+                      onSelectionChanged: (s) => setState(() {
+                        _isDoctor = s.first;
+                        _selectedYear = _yearOptions.first;
+                      }),
+                    ),
+                    const SizedBox(height: AppSpacing.md),
                     _dropdown(
                       label: 'Specialty',
                       icon: Icons.medical_information_outlined,
@@ -191,17 +218,17 @@ class _SignupScreenState extends State<SignupScreen> {
                     ),
                     const SizedBox(height: AppSpacing.md),
                     _dropdown(
-                      label: 'Academic year / level',
+                      label: _isDoctor ? 'Seniority' : 'Academic year',
                       icon: Icons.school_outlined,
                       value: _selectedYear,
-                      items: _years,
+                      items: _yearOptions,
                       onChanged: (v) => setState(() => _selectedYear = v!),
                     ),
                     const SizedBox(height: AppSpacing.md),
                     AppTextField(
                       controller: _passwordController,
                       label: 'Password',
-                      hint: 'At least 6 characters',
+                      hint: 'At least 8 characters, with a letter and a number',
                       prefixIcon: Icons.lock_outline,
                       obscureText: !_isPasswordVisible,
                       suffixIcon: _isPasswordVisible
@@ -212,7 +239,15 @@ class _SignupScreenState extends State<SignupScreen> {
                       onChanged: (_) => setState(() {}),
                       validator: (v) {
                         if (v == null || v.isEmpty) return 'Please enter a password';
-                        if (v.length < 6) return 'Password must be at least 6 characters';
+                        if (v.length < 8) {
+                          return 'Password must be at least 8 characters';
+                        }
+                        if (!RegExp(r'[A-Za-z]').hasMatch(v)) {
+                          return 'Password must include at least one letter';
+                        }
+                        if (!RegExp(r'[0-9]').hasMatch(v)) {
+                          return 'Password must include at least one number';
+                        }
                         return null;
                       },
                     ),

@@ -7,6 +7,7 @@ import '../models/patient.dart';
 import '../services/auth_service.dart';
 import '../services/database_service.dart';
 import '../services/notification_preferences_service.dart';
+import '../services/progress_service.dart';
 import '../services/role_service.dart';
 import '../utils/app_spacing.dart';
 import '../utils/app_typography.dart';
@@ -21,9 +22,14 @@ import 'patient_record_screen.dart';
 /// account is a doctor or a student — a busy clinician and a student on
 /// placement need very different things from the first screen they see.
 class HomeTab extends StatefulWidget {
-  const HomeTab({super.key, required this.onSeeAllPatients});
+  const HomeTab({
+    super.key,
+    required this.onSeeAllPatients,
+    required this.onOpenInsights,
+  });
 
   final VoidCallback onSeeAllPatients;
+  final VoidCallback onOpenInsights;
 
   @override
   State<HomeTab> createState() => HomeTabState();
@@ -31,7 +37,9 @@ class HomeTab extends StatefulWidget {
 
 class HomeTabState extends State<HomeTab> {
   final _db = DatabaseService();
+  final _progressService = ProgressService();
   late Future<List<Patient>> _patientsFuture;
+  Future<StudentProgressStats>? _statsFuture;
 
   @override
   void initState() {
@@ -45,7 +53,14 @@ class HomeTabState extends State<HomeTab> {
     return _db.getPatients(user.uid);
   }
 
-  void refresh() => setState(() => _patientsFuture = _fetchPatients());
+  Future<StudentProgressStats> _fetchStats(String uid) {
+    return _statsFuture ??= _progressService.forUser(uid);
+  }
+
+  void refresh() => setState(() {
+        _patientsFuture = _fetchPatients();
+        _statsFuture = null;
+      });
 
   @override
   Widget build(BuildContext context) {
@@ -61,11 +76,6 @@ class HomeTabState extends State<HomeTab> {
         children: [
           _greeting(context, isDoctor, displayName, arabic),
           const SizedBox(height: AppSpacing.lg),
-          if (isDoctor && context.watch<NotificationPreferencesService>().isEnabled)
-            UrgentCasesBanner(onTap: widget.onSeeAllPatients)
-          else if (!isDoctor)
-            _studentProgressCard(context, arabic),
-          const SizedBox(height: AppSpacing.lg),
           FutureBuilder<List<Patient>>(
             future: _patientsFuture,
             builder: (context, snapshot) {
@@ -76,7 +86,19 @@ class HomeTabState extends State<HomeTab> {
                 );
               }
               final patients = snapshot.data ?? const [];
-              return _recentSection(context, patients, isDoctor, arabic);
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (isDoctor) _doctorStatsRow(context, patients, arabic),
+                  if (isDoctor) const SizedBox(height: AppSpacing.md),
+                  if (isDoctor &&
+                      context.watch<NotificationPreferencesService>().isEnabled)
+                    UrgentCasesBanner(onTap: widget.onSeeAllPatients),
+                  if (!isDoctor) _studentProgressStrip(context, arabic),
+                  const SizedBox(height: AppSpacing.lg),
+                  _recentSection(context, patients, arabic),
+                ],
+              );
             },
           ),
           const SizedBox(height: AppSpacing.xl),
@@ -116,47 +138,115 @@ class HomeTabState extends State<HomeTab> {
     );
   }
 
-  Widget _studentProgressCard(BuildContext context, bool arabic) {
-    return FutureBuilder<List<Patient>>(
-      future: _patientsFuture,
-      builder: (context, snapshot) {
-        final patients = snapshot.data ?? const [];
-        final now = DateTime.now();
-        final startOfWeek = now.subtract(Duration(days: now.weekday - 1));
-        final thisWeek = patients
-            .where((p) => p.createdAt.isAfter(startOfWeek))
-            .length;
+  Widget _doctorStatsRow(
+      BuildContext context, List<Patient> patients, bool arabic) {
+    final now = DateTime.now();
+    final startOfWeek = now.subtract(Duration(days: now.weekday - 1));
+    final thisWeek =
+        patients.where((p) => p.createdAt.isAfter(startOfWeek)).length;
+    final urgent = patients.where((p) => p.isUrgent).length;
 
-        return AppCard(
-          child: Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      arabic ? 'هذا الأسبوع' : 'This week',
-                      style: AppTypography.caption(context),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      arabic ? '$thisWeek حالة أُخذت' : '$thisWeek cases taken',
-                      style: AppTypography.titleMedium(context),
-                    ),
-                  ],
-                ),
+    return Row(
+      children: [
+        Expanded(
+          child: _statCard(context, '${patients.length}',
+              arabic ? 'إجمالي المرضى' : 'Total patients',
+              Icons.people_alt_outlined),
+        ),
+        const SizedBox(width: AppSpacing.sm),
+        Expanded(
+          child: _statCard(
+            context,
+            '$urgent',
+            arabic ? 'طارئ' : 'Urgent',
+            Icons.local_fire_department_outlined,
+            highlight: urgent > 0,
+          ),
+        ),
+        const SizedBox(width: AppSpacing.sm),
+        Expanded(
+          child: _statCard(context, '$thisWeek',
+              arabic ? 'هذا الأسبوع' : 'This week',
+              Icons.calendar_today_outlined),
+        ),
+      ],
+    );
+  }
+
+  Widget _statCard(
+      BuildContext context, String value, String label, IconData icon,
+      {bool highlight = false}) {
+    final theme = Theme.of(context);
+    final color = highlight ? theme.colorScheme.error : theme.colorScheme.primary;
+    return AppCard(
+      padding: const EdgeInsets.all(AppSpacing.sm + 2),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 18, color: color),
+          const SizedBox(height: 6),
+          Text(value,
+              style: AppTypography.titleLarge(context).copyWith(color: color)),
+          Text(label, style: AppTypography.caption(context)),
+        ],
+      ),
+    );
+  }
+
+  Widget _studentProgressStrip(BuildContext context, bool arabic) {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return const SizedBox.shrink();
+
+    return FutureBuilder<StudentProgressStats>(
+      future: _fetchStats(user.uid),
+      builder: (context, snapshot) {
+        final stats = snapshot.data ?? StudentProgressStats.empty;
+        final theme = Theme.of(context);
+        return InkWell(
+          onTap: widget.onOpenInsights,
+          borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+          child: Container(
+            padding: const EdgeInsets.all(AppSpacing.md),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  theme.colorScheme.primary,
+                  theme.colorScheme.primary.withValues(alpha: 0.75),
+                ],
               ),
-              Icon(Icons.school_outlined,
-                  size: 32, color: Theme.of(context).colorScheme.primary),
-            ],
+              borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+            ),
+            child: Row(
+              children: [
+                if (stats.streakDays > 0) ...[
+                  const Icon(Icons.local_fire_department_rounded,
+                      color: Colors.orangeAccent),
+                  const SizedBox(width: 4),
+                  Text('${stats.streakDays}',
+                      style: theme.textTheme.titleMedium
+                          ?.copyWith(color: Colors.white)),
+                  const SizedBox(width: AppSpacing.md),
+                ],
+                Expanded(
+                  child: Text(
+                    arabic
+                        ? '${stats.points} نقطة • ${stats.casesTaken} حالة'
+                        : '${stats.points} points • ${stats.casesTaken} cases',
+                    style: theme.textTheme.bodyMedium
+                        ?.copyWith(color: Colors.white),
+                  ),
+                ),
+                const Icon(Icons.chevron_right_rounded, color: Colors.white),
+              ],
+            ),
           ),
         );
       },
     );
   }
 
-  Widget _recentSection(BuildContext context, List<Patient> patients,
-      bool isDoctor, bool arabic) {
+  Widget _recentSection(
+      BuildContext context, List<Patient> patients, bool arabic) {
     final recent = patients.take(5).toList();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
